@@ -1,0 +1,12 @@
+{
+  "html_title": "Docker và Container notes · Trác Việt",
+  "doc_suffix": "Docker notes",
+  "storage": "dkr",
+  "brand_aria": "Docker và Container notes",
+  "mk": "dkr",
+  "brand_text": ["Docker · Container", "notes"],
+  "home_url": "https://tracviethustcs.github.io/",
+  "nav": [["Khái niệm", "#why-containers"], ["Image", "#images"], ["Container", "#run"], ["Compose", "#compose"], ["Bảo mật", "#security"], ["Luyện tập", "#quiz-1"]],
+  "colors": {"acc": "#0b5cad", "acc_d": "#084a8c", "acc_dk": "#6db3ff", "onacc_dk": "#06192b", "navbg": "#0e2438", "navbg_dk": "#0b1a28", "mark": "#2496ed", "mark_ink": "#06192b"},
+  "footer": "Ghi chú tự học, tự soạn, không phải tài liệu chính thức của Docker, Inc. hay Open Container Initiative. Docker là nhãn hiệu của Docker, Inc. Lệnh, tuỳ chọn và giá trị mặc định thay đổi theo phiên bản: hãy đối chiếu tài liệu hiện hành (docs.docker.com) và thử trong môi trường lab. Đừng chạy lệnh trên server production nếu chưa hiểu nó làm gì."
+}

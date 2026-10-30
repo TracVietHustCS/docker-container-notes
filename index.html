@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docker và Container notes · Trác Việt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0972d3; --blue-d:#075aa6; --navbg:#232f3e;
+  --bg:#ffffff; --side:#fafbfc; --ink:#202124; --muted:#5f6368; --line:#e1e4e8;
+  --link:#0972d3; --code:#f3f5f8; --codeink:#1f2933;
+  --note:#e8f0fe; --note-b:#326ce5; --tip:#e6f4ea; --tip-b:#1e8e3e; --warn:#fff4e5; --warn-b:#e37400;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --navbg:#161e2a; --bg:#0f141b; --side:#0f141b; --ink:#e4e8ee; --muted:#9aa5b1; --line:#252f3c;
+    --link:#8ab0ff; --code:#171f2a; --codeink:#dbe4ee;
+    --note:#14233f; --note-b:#5b8cf0; --tip:#10261a; --tip-b:#3fb860; --warn:#2b200f; --warn-b:#f0a03c; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --navbg:#161e2a; --bg:#0f141b; --side:#0f141b; --ink:#e4e8ee; --muted:#9aa5b1; --line:#252f3c;
+  --link:#8ab0ff; --code:#171f2a; --codeink:#dbe4ee;
+  --note:#14233f; --note-b:#5b8cf0; --tip:#10261a; --tip-b:#3fb860; --warn:#2b200f; --warn-b:#f0a03c; color-scheme:dark;
+}
+html{height:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.65}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--navbg);z-index:40}
+a{color:var(--link)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:3px}
+
+/* navbar */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;height:56px;background:var(--navbg);color:#fff;
+  display:flex;align-items:center;gap:18px;padding:0 20px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:500;font-size:18px;white-space:nowrap}
+.brand svg{width:34px;height:34px;flex:none}
+.nav .links{display:flex;gap:18px;font-size:14px}
+.nav .links a{color:#fff;text-decoration:none;opacity:.9}
+.nav .links a:hover{opacity:1;text-decoration:underline}
+.nav .sp{flex:1}
+.search{position:relative;width:260px;max-width:40vw}
+.search input{width:100%;height:34px;border:0;border-radius:4px;padding:0 12px;font:inherit;font-size:14px;
+  background:rgba(255,255,255,.18);color:#fff}
+.search input::placeholder{color:rgba(255,255,255,.8)}
+.search input:focus{background:#fff;color:#202124;outline:2px solid #fff}
+.search input:focus::placeholder{color:#6b7280}
+.ibtn{background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:4px;height:32px;padding:0 10px;
+  font:inherit;font-size:13px;cursor:pointer}
+.ibtn:hover{background:rgba(255,255,255,.14)}
+#burger{display:none;font-size:18px;padding:0 10px}
+
+/* layout */
+.shell{display:grid;grid-template-columns:290px minmax(0,1fr) 240px;max-width:1500px;margin:0 auto}
+aside#side{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));align-self:start;
+  height:calc(100vh - 56px - env(safe-area-inset-top,0px));overflow-y:auto;background:var(--side);
+  border-right:1px solid var(--line);padding:16px 12px 40px}
+.prog{font-size:13px;color:var(--muted);margin:0 8px 12px}
+.prog i{display:block;height:4px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+.prog i b{display:block;height:100%;background:var(--blue);width:0}
+.grp h3{font-size:12px;font-weight:700;color:var(--muted);margin:16px 8px 4px;letter-spacing:.02em}
+#side a{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;color:var(--ink);text-decoration:none;font-size:14px;line-height:1.35}
+#side a:hover{background:var(--code)}
+#side a.on{color:var(--blue);background:var(--note);font-weight:500}
+#side a.read::after{content:"✓";margin-left:auto;color:var(--tip-b);font-size:12px}
+.none{display:none;margin:16px 8px;font-size:14px;color:var(--muted)}
+#side a.by{margin:24px 4px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;gap:10px;color:var(--ink)}
+#side a.by:hover{border-color:var(--blue);background:transparent}
+#side a.by span{display:flex;flex-direction:column;line-height:1.25}
+#side a.by small{color:var(--muted);font-size:12px}
+
+main{padding:28px 44px 80px;min-width:0}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:6px}
+.page h1{font-size:34px;font-weight:500;line-height:1.2;margin:0 0 14px}
+.lead{font-size:18px;color:var(--muted);margin:0 0 8px;max-width:70ch}
+.page h2{font-size:24px;font-weight:500;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.page h3{font-size:18px;font-weight:500;margin:26px 0 6px}
+.page p,.page li{max-width:76ch}
+.page ul,.page ol{padding-left:24px}
+.page li{margin:3px 0}
+code{font-family:var(--mono);font-size:.86em;background:var(--code);color:var(--codeink);padding:2px 5px;border-radius:3px}
+pre{position:relative;background:var(--code);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;margin:14px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;white-space:pre}
+.copy{position:absolute;top:6px;right:6px;font:inherit;font-size:12px;background:var(--bg);color:var(--muted);border:1px solid var(--line);
+  border-radius:4px;padding:2px 8px;cursor:pointer}
+.copy:hover{color:var(--ink)}
+.tw{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--code);font-weight:500}
+.callout{border-left:4px solid var(--note-b);background:var(--note);padding:10px 16px;margin:18px 0;border-radius:0 6px 6px 0;max-width:76ch}
+.callout p{margin:4px 0}
+.callout>b:first-child{display:block;margin-bottom:2px}
+.callout.tip{background:var(--tip);border-color:var(--tip-b)}
+.callout.warn{background:var(--warn);border-color:var(--warn-b)}
+.dg{width:100%;height:auto;margin:16px 0;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.dg .box{fill:var(--bg);stroke:var(--blue);stroke-width:1.5}
+.dg .zone{fill:var(--code);stroke:var(--line);stroke-width:1.5}
+.dg .pod{fill:var(--note);stroke:var(--note-b);stroke-width:1}
+.dg text{fill:var(--ink);font-family:var(--font);font-size:13px}
+.dg .zt{font-weight:700;font-size:13px}
+.dg .ln{stroke:var(--blue);stroke-width:1.5;fill:none}
+.dg .dash{stroke-dasharray:5 4}
+
+.mark{display:flex;align-items:center;gap:10px;margin:40px 0 0;padding-top:20px;border-top:1px solid var(--line)}
+.mark button{font:inherit;font-size:14px;border:1px solid var(--blue);color:var(--blue);background:transparent;border-radius:4px;padding:6px 14px;cursor:pointer}
+.mark button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.pn{display:flex;justify-content:space-between;gap:12px;margin-top:20px}
+.pn a{display:block;border:1px solid var(--line);border-radius:6px;padding:10px 16px;text-decoration:none;color:var(--ink);max-width:48%}
+.pn a:hover{border-color:var(--blue)}
+.pn small{display:block;color:var(--muted);font-size:12px}
+.pn a:last-child{text-align:right;margin-left:auto}
+
+nav#toc{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));align-self:start;
+  max-height:calc(100vh - 56px - env(safe-area-inset-top,0px));overflow-y:auto;padding:28px 16px 40px 0;font-size:13.5px}
+#toc h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:700}
+#toc a{display:block;padding:3px 0 3px 12px;border-left:2px solid var(--line);color:var(--muted);text-decoration:none;line-height:1.4}
+#toc a.l3{padding-left:26px}
+#toc a:hover{color:var(--ink)}
+#toc a.on{color:var(--blue);border-left-color:var(--blue);font-weight:500}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-size:13px;color:var(--muted)}
+#scrim{display:none}
+
+@media (max-width:1100px){.shell{grid-template-columns:270px minmax(0,1fr)}nav#toc{display:none}}
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  .nav .links{display:none}
+  #burger{display:inline-block}
+  .brand span{font-size:16px}
+  aside#side{position:fixed;left:0;bottom:0;top:calc(56px + env(safe-area-inset-top,0px));height:auto;width:300px;max-width:86vw;z-index:25;
+    transform:translateX(-102%);transition:transform .2s}
+  aside#side.open{transform:none}
+  #scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20}
+  main{padding:20px 16px 64px}
+  .page h1{font-size:28px}
+  .search{width:auto;flex:1;max-width:none}
+  .sp{display:none}
+}
+@media (prefers-reduced-motion:reduce){aside#side{transition:none}}
+
+.nav{border-bottom:3px solid #2496ed}
+.mk{background:#2496ed;color:#06192b;font-family:var(--mono);font-weight:700;font-size:13px;padding:4px 8px;border-radius:4px;letter-spacing:.02em}
+.brand{gap:10px}
+/* quiz */
+.qsum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:16px 0 8px;padding:12px 16px;border:1px solid var(--line);border-radius:8px;background:var(--code)}
+.qsum b{font-weight:500}.qsum button{font:inherit;font-size:13px;padding:4px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);cursor:pointer;margin-left:auto}
+.qs{border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin:16px 0;background:var(--bg)}
+.qs.right{border-color:var(--tip-b)}.qs.wrong{border-color:#d13212}
+.qn{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:500}
+.qt{margin:0 0 12px;max-width:80ch}
+.qo{list-style:none;margin:0 0 10px;padding:0}
+.qo li{margin:6px 0;max-width:80ch}
+.qo label{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.qo label:hover{border-color:var(--blue)}
+.qo input{margin-top:5px;accent-color:var(--blue)}
+.qo li.ok label{border-color:var(--tip-b);background:var(--tip)}
+.qo li.bad label{border-color:#d13212;background:rgba(209,50,18,.1)}
+.qo li.miss label{border-color:var(--tip-b);border-style:dashed}
+.qh{margin:0 0 10px;font-size:13px;color:var(--muted)}
+.qb{font:inherit;font-size:14px;padding:7px 18px;border:0;border-radius:4px;background:var(--blue);color:#fff;cursor:pointer}
+.qb:disabled{opacity:.5;cursor:default}
+.qe{margin-top:14px;padding:12px 16px;border-left:4px solid var(--note-b);background:var(--note);border-radius:0 6px 6px 0;max-width:80ch}
+.qe b.v{display:block;margin-bottom:4px}
+
+/* ===== site theme ===== */
+:root{--blue:#0b5cad;--blue-d:#084a8c;--onacc:#fff;--navbg:#0e2438;--bg:#fcfcfd;--side:#f5f6f8;--ink:#1d2229;--muted:#5b6571;--line:#dfe2e7;
+  --link:#0b5cad;--code:#eef0f3;--codeink:#1d2229;--note:#edf1f6;--note-b:#51647b;--tip:#e7f4ea;--tip-b:#1f8a3b;--warn:#fff1e0;--warn-b:#c25b00}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--blue:#6db3ff;--blue-d:#6db3ff;--onacc:#06192b;--navbg:#0b1a28;--bg:#11151a;--side:#11151a;--ink:#e3e7ec;--muted:#98a3b0;--line:#252c35;
+    --link:#6db3ff;--code:#1a2027;--codeink:#dde4ec;--note:#18212c;--note-b:#7f95b0;--tip:#102419;--tip-b:#46b866;--warn:#2a1d0c;--warn-b:#f0a03c}
+}
+:root[data-theme="dark"]{--blue:#6db3ff;--blue-d:#6db3ff;--onacc:#06192b;--navbg:#0b1a28;--bg:#11151a;--side:#11151a;--ink:#e3e7ec;--muted:#98a3b0;--line:#252c35;
+  --link:#6db3ff;--code:#1a2027;--codeink:#dde4ec;--note:#18212c;--note-b:#7f95b0;--tip:#102419;--tip-b:#46b866;--warn:#2a1d0c;--warn-b:#f0a03c}
+:root[data-theme="light"]{--blue:#0b5cad;--onacc:#fff}
+body{font-size:16px}
+.page h1{font-weight:600;letter-spacing:-.01em}
+.page h2{font-weight:600}
+.mark button[aria-pressed="true"],.qb{color:var(--onacc)}
+#side a.on{color:var(--link)}
+pre{background:#12171d;border-color:#28313c;color:#d6dde5}
+pre code{color:#d6dde5;font-size:13px}
+pre .ps{color:#2496ed;user-select:none}
+pre .cm{color:#7f8c99}
+pre.ascii{line-height:1.25}
+pre.ascii code{font-size:12.5px}
+.copy{background:#1b222a;color:#9fb0c1;border-color:#2c3744}
+.copy:hover{color:#fff}
+.callout.lab{background:var(--code);border-color:var(--blue)}
+.callout.lab>b:first-child::before{content:"Lab · ";color:var(--blue)}
+.callout.lab pre{margin:10px 0}
+.qs.wrong{border-color:#c0392b}
+@media (max-width:560px){
+  .nav{gap:10px;padding:0 12px}
+  .brand>span:last-child{display:none}
+  .search input{min-width:0}
+  #theme{padding:0 8px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <button class="ibtn" id="burger" aria-label="Mở mục lục">☰</button>
+  <a class="brand" href="#overview" aria-label="Docker và Container notes"><span class="mk">dkr</span><span>Docker · Container <span style="font-weight:400;opacity:.85">notes</span></span></a>
+  <nav class="links" aria-label="Liên kết nhanh">
+    <a href="https://tracviethustcs.github.io/">← Trác Việt</a>
+    <a href="#why-containers">Khái niệm</a>
+    <a href="#images">Image</a>
+    <a href="#run">Container</a>
+    <a href="#compose">Compose</a>
+    <a href="#security">Bảo mật</a>
+    <a href="#quiz-1">Luyện tập</a>
+  </nav>
+  <span class="sp"></span>
+  <div class="search"><input id="q" type="search" placeholder="Tìm trong ghi chú  ( / )" aria-label="Tìm trong ghi chú"></div>
+  <button class="ibtn" id="theme" aria-label="Đổi giao diện sáng/tối">Sáng/Tối</button>
+</header>
+<div id="scrim"></div>
+
+<div class="shell">
+  <aside id="side" aria-label="Mục lục">
+    <a href="https://tracviethustcs.github.io/" style="margin:0 0 10px;font-weight:500;color:var(--blue)">← Tất cả tài liệu</a>
+    <div class="prog"><span id="progtxt"></span><i><b id="progbar"></b></i></div>
+    <div id="side-links"></div>
+    <p class="none" id="none">Không có trang nào khớp từ khóa.</p>
+    <a class="by" href="https://github.com/TracVietHustCS" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span><b>TracViet</b><small>@TracVietHustCS</small></span>
+    </a>
+  </aside>
+
+  <main id="main">
+
+<!-- ============ OVERVIEW ============ -->
+<article class="page" data-id="overview" data-group="Bắt đầu" data-title="Tổng quan và cách học" hidden>
+<h1>Tổng quan và cách học</h1>
+<p class="lead">Bộ ghi chú về Docker và container cho người làm DevOps: từ khái niệm, build image, chạy container, mạng, lưu trữ, Compose đến bảo mật và xử lý sự cố. Đọc theo thứ tự thì mỗi trang dựa trên trang trước; cũng có thể tra riêng từng trang.</p>
+<div class="callout warn"><b>Đọc trước khi dùng</b><p>Đây là ghi chú <b>tự học, tự soạn</b>, không phải tài liệu chính thức của Docker, Inc. Tuỳ chọn dòng lệnh, giá trị mặc định và tính năng thay đổi theo phiên bản Docker Engine, Docker Desktop và BuildKit. Ghi chú không tra cứu trực tuyến nên có thể lỗi thời: hãy đối chiếu <b>docs.docker.com</b> và <code>docker &lt;lệnh&gt; --help</code> trước khi áp dụng, đặc biệt với lệnh có thể xoá dữ liệu.</p></div>
+<h2>Bạn sẽ làm được gì sau khi học xong</h2>
+<ul><li>Giải thích container là gì ở mức Linux (namespace, cgroup, filesystem phân lớp) và khác máy ảo ở đâu.</li><li>Viết Dockerfile nhỏ, build nhanh nhờ cache, an toàn (multi-stage, non-root, không lộ bí mật).</li><li>Chạy, giới hạn, debug container; hiểu volume, bind mount và mạng bridge.</li><li>Dựng một stack nhiều dịch vụ bằng Compose, có healthcheck và tách môi trường dev/prod.</li><li>Áp dụng các biện pháp bảo mật cơ bản và xử lý được các sự cố hay gặp.</li></ul>
+<h2>Cấu trúc</h2>
+<div class="tw"><table><tr><th>Nhóm</th><th>Trang</th><th>Nội dung</th></tr><tr><td>Khái niệm</td><td><a href="#why-containers">Container là gì</a></td><td>Cơ chế, kiến trúc Docker, OCI</td></tr><tr><td>Image</td><td><a href="#images">Image và layer</a>, <a href="#dockerfile">Dockerfile</a>, <a href="#build-best">Dockerfile tốt</a>, <a href="#registry">Registry</a></td><td>Tạo, tối ưu, phân phối image</td></tr><tr><td>Container</td><td><a href="#run">docker run</a>, <a href="#resources">Giới hạn tài nguyên</a></td><td>Chạy và kiểm soát container</td></tr><tr><td>Lưu trữ và mạng</td><td><a href="#volumes">Volume</a>, <a href="#networking">Mạng</a></td><td>Dữ liệu bền và kết nối</td></tr><tr><td>Compose</td><td><a href="#compose">Compose cơ bản</a>, <a href="#compose-patterns">Compose thực tế</a></td><td>Nhiều dịch vụ trên một máy</td></tr><tr><td>Bảo mật</td><td><a href="#security">Bảo mật container</a></td><td>Giảm rủi ro khi chạy</td></tr><tr><td>Vận hành</td><td><a href="#daemon-logs">Daemon và log</a>, <a href="#troubleshooting">Xử lý sự cố</a>, <a href="#ecosystem">Hệ sinh thái</a></td><td>Vận hành hằng ngày</td></tr><tr><td>Tham chiếu</td><td><a href="#cli-ref">Cheat sheet</a>, <a href="#quiz-1">Luyện tập 1</a>, <a href="#quiz-2">Luyện tập 2</a></td><td>Tra nhanh và tự kiểm tra</td></tr></table></div>
+<h2>Cài đặt môi trường lab</h2>
+<div class="tw"><table><tr><th>Cách</th><th>Hợp với</th><th>Ghi chú</th></tr><tr><td>Docker Engine trên Linux</td><td>Học đúng như production</td><td>Cài theo hướng dẫn của docs.docker.com cho distro của bạn; thêm user vào group <code>docker</code> hoặc dùng <code>sudo</code></td></tr><tr><td>Docker Desktop (Windows, macOS)</td><td>Máy cá nhân</td><td>Chạy Docker Engine trong một VM nhẹ; có điều khoản cấp phép cho tổ chức lớn, hãy kiểm tra</td></tr><tr><td>WSL2 (Windows)</td><td>Học dòng lệnh</td><td>Docker Desktop tích hợp WSL2, hoặc cài Engine trực tiếp trong bản Linux của WSL2</td></tr><tr><td>Multipass hoặc VM Ubuntu</td><td>Lab về mạng, cgroup</td><td>Có kernel Linux thật, hợp với các lab sâu</td></tr></table></div>
+<pre><code>docker version
+docker info
+docker run --rm hello-world</code></pre>
+<div class="callout tip"><b>Group docker tương đương quyền root</b><p>Người thuộc group <code>docker</code> điều khiển được daemon, mà daemon chạy bằng root: họ có thể mount cả hệ thống file của máy vào một container. Chỉ thêm người bạn tin, và xem <a href="#security">Bảo mật</a> về chế độ rootless.</p></div>
+<h2>Liên quan tới các ghi chú khác</h2>
+<p>Docker dựa hoàn toàn vào các cơ chế của Linux: xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-namespace" target="_blank" rel="noopener">namespace</a>, <a href="https://tracviethustcs.github.io/linux-network-notes/#os-cgroup" target="_blank" rel="noopener">cgroups</a>, <a href="https://tracviethustcs.github.io/linux-network-notes/#os-container" target="_blank" rel="noopener">dựng container từ đầu</a> và <a href="https://tracviethustcs.github.io/linux-network-notes/#net-linux" target="_blank" rel="noopener">mạng Linux</a> trong ghi chú Linux. Khi cần chạy nhiều container trên nhiều máy, bước tiếp theo là <a href="https://tracviethustcs.github.io/k8s-study-notes/" target="_blank" rel="noopener">Kubernetes</a>.</p>
+</article>
+<article class="page" data-id="why-containers" data-group="Khái niệm" data-title="Container là gì và kiến trúc Docker" hidden>
+<h1>Container là gì và kiến trúc Docker</h1>
+<p class="lead">Container là process Linux bị giới hạn về những gì nó thấy và dùng được, chạy từ một image chứa sẵn mọi thứ nó cần. Docker là bộ công cụ làm việc đó dễ dùng.</p>
+<h2>Vấn đề container giải quyết</h2>
+<p>"Chạy được trên máy tôi" xảy ra vì ứng dụng phụ thuộc vào hệ điều hành, thư viện, phiên bản runtime và cấu hình của máy. Container đóng gói ứng dụng cùng toàn bộ phụ thuộc userspace vào một <b>image</b> bất biến, để cùng một image chạy giống nhau trên laptop, CI và production.</p>
+<h2>Container ở mức Linux</h2>
+<p>Một container không phải là một "thứ" mà kernel biết. Nó là một process thông thường được bọc bởi:</p>
+<ul><li><b>Namespace</b>: giới hạn những gì process nhìn thấy (cây PID, mount, mạng, hostname, user...). Xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-namespace" target="_blank" rel="noopener">Namespace</a>.</li><li><b>cgroup</b>: giới hạn những gì process dùng được (CPU, RAM, I/O, số process). Xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-cgroup" target="_blank" rel="noopener">cgroups v2</a>.</li><li><b>Filesystem phân lớp</b> (overlayfs): các lớp chỉ đọc của image cộng một lớp ghi riêng của container.</li><li><b>Capabilities, seccomp, AppArmor/SELinux</b>: giới hạn những gì process được phép làm.</li></ul>
+<p>Kết quả quan trọng: container <b>dùng chung kernel</b> với máy chủ. Vì vậy container Linux cần kernel Linux, khởi động trong mili giây, nhưng cô lập yếu hơn máy ảo.</p>
+<div class="tw"><table><tr><th></th><th>Máy ảo</th><th>Container</th></tr><tr><td>Kernel</td><td>Mỗi VM một kernel riêng</td><td>Dùng chung kernel máy chủ</td></tr><tr><td>Khởi động</td><td>Giây đến phút</td><td>Mili giây đến giây</td></tr><tr><td>Kích thước</td><td>Hàng GB (cả hệ điều hành)</td><td>Hàng chục đến vài trăm MB</td></tr><tr><td>Cô lập</td><td>Mạnh (ranh giới hypervisor)</td><td>Yếu hơn (ranh giới kernel)</td></tr><tr><td>Mật độ trên một máy</td><td>Thấp hơn</td><td>Cao hơn</td></tr></table></div>
+<h2>Kiến trúc Docker</h2>
+<pre class="ascii"><code>  docker CLI  ----REST API qua /var/run/docker.sock----&gt;  dockerd (Docker daemon)
+                                                             |  quản lý image, mạng, volume, build
+                                                             v
+                                                        containerd           quản lý vòng đời container
+                                                             |
+                                                       containerd-shim       giữ container chạy khi daemon restart
+                                                             |
+                                                           runc              tạo namespace + cgroup, chạy process (chuẩn OCI)
+                                                             |
+                                                       process container     (ứng dụng của bạn)</code></pre>
+<ul><li><b>Docker CLI</b> chỉ là client gọi API. Biến <code>DOCKER_HOST</code> quyết định daemon nào nó nói chuyện.</li><li><b>dockerd</b> lo phần "nền tảng": build, mạng, volume, API. Nó giao việc chạy container cho <b>containerd</b>.</li><li><b>runc</b> là runtime tham chiếu theo chuẩn OCI: thực sự tạo ra container.</li><li>Docker Desktop trên Windows và macOS chạy daemon trong một VM Linux nhẹ, nên "localhost" và đường dẫn file có khác biệt so với Linux.</li></ul>
+<h3>Chuẩn OCI</h3>
+<p>Open Container Initiative định nghĩa ba chuẩn: <b>image spec</b> (định dạng image), <b>runtime spec</b> (cách chạy container) và <b>distribution spec</b> (API của registry). Nhờ đó image build bằng Docker chạy được trên Podman, containerd, Kubernetes và ngược lại.</p>
+<h2>Từ vựng</h2>
+<div class="tw"><table><tr><th>Thuật ngữ</th><th>Nghĩa</th></tr><tr><td>Image</td><td>Gói chỉ đọc gồm các lớp filesystem và metadata (lệnh chạy, biến môi trường)</td></tr><tr><td>Container</td><td>Một lần chạy của image: process cộng lớp ghi riêng</td></tr><tr><td>Registry</td><td>Nơi lưu và phân phối image (Docker Hub, GHCR, ECR, Harbor...)</td></tr><tr><td>Dockerfile</td><td>Tệp mô tả cách build image</td></tr><tr><td>Volume</td><td>Nơi lưu dữ liệu bền ngoài vòng đời container</td></tr><tr><td>Network</td><td>Mạng ảo nối các container</td></tr><tr><td>Compose</td><td>Công cụ mô tả và chạy nhiều container cùng nhau bằng một file YAML</td></tr></table></div>
+<div class="callout lab"><b>Nhìn container ở dưới nắp</b><pre><code>docker run -d --name web nginx:alpine
+ps -ef --forest | grep -B2 -A2 "nginx: master"        # chuỗi containerd-shim -&gt; nginx
+PID=$(docker inspect -f '{{.State.Pid}}' web); echo $PID
+ls -l /proc/$PID/ns                                     # các namespace của container
+cat /proc/$PID/cgroup
+sudo nsenter -t $PID -n ip -br addr                     # mạng bên trong container
+docker rm -f web</code></pre>
+<p>Trả lời: PID của nginx trên máy chủ khác PID 1 bên trong container thế nào? Namespace nào khác với shell của bạn?</p></div>
+</article>
+<article class="page" data-id="images" data-group="Image" data-title="Image, layer và digest" hidden>
+<h1>Image, layer và digest</h1>
+<p class="lead">Image là chuỗi các lớp chỉ đọc cộng metadata, nhận diện bằng digest. Hiểu layer giải thích vì sao build nhanh hay chậm, vì sao image nặng, và vì sao tag không đáng tin.</p>
+<h2>Layer</h2>
+<p>Mỗi lệnh thay đổi filesystem trong Dockerfile (<code>RUN</code>, <code>COPY</code>, <code>ADD</code>) tạo một <b>layer</b>: một bản diff so với layer trước. Image là chồng các layer; container thêm một lớp <b>ghi</b> (writable) lên trên cùng. Docker dùng một storage driver (phổ biến nhất là <code>overlay2</code>, dựa trên overlayfs của Linux, xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-container" target="_blank" rel="noopener">Dựng container từ đầu</a>) để hợp nhất các lớp thành một cây thư mục duy nhất.</p>
+<pre class="ascii"><code>   Container (lớp ghi)   &lt;- thay đổi lúc chạy, mất khi xoá container
+   ----------------------
+   Layer 4: COPY app/ /app          } các lớp image:
+   Layer 3: RUN pip install ...     } chỉ đọc,
+   Layer 2: RUN apt-get install ... } chia sẻ giữa nhiều image
+   Layer 1: base (debian-slim)      } và nhiều container</code></pre>
+<p>Hệ quả:</p>
+<ul><li><b>Chia sẻ</b>: nhiều image dùng chung base chỉ lưu và tải layer chung một lần.</li><li><b>Copy-on-write</b>: sửa một file ở lớp dưới thì file được sao chép lên lớp ghi rồi mới sửa. Ghi nhiều vào lớp ghi của container chậm và mất khi xoá container: dữ liệu bền phải ở <a href="#volumes">volume</a>.</li><li><b>Layer không bao giờ co lại</b>: xoá file ở layer sau không làm image nhỏ đi, vì file vẫn nằm ở layer trước. Đây là lý do cần gom lệnh và dùng <a href="#build-best">multi-stage</a>.</li><li><b>Bí mật lộ trong layer</b>: một file bí mật đã <code>COPY</code> vào rồi <code>rm</code> ở lệnh sau vẫn lấy ra được từ layer cũ.</li></ul>
+<h2>Tag và digest</h2>
+<ul><li><b>Tag</b> (<code>nginx:1.27</code>) là tên có thể đọc được, nhưng <b>có thể bị đổi</b> để trỏ sang image khác (<code>latest</code>, thậm chí <code>1.27</code> khi có bản vá).</li><li><b>Digest</b> (<code>nginx@sha256:3f1a...</code>) là mã băm của manifest: <b>bất biến</b>, nên đảm bảo chạy đúng image bạn đã thử.</li></ul>
+<p>Một tag đa kiến trúc trỏ tới một <b>manifest list</b> (index) gồm nhiều manifest, mỗi cái cho một nền tảng (<code>linux/amd64</code>, <code>linux/arm64</code>); Docker chọn đúng cái hợp với máy. Lỗi <code>exec format error</code> khi chạy thường do image sai kiến trúc.</p>
+<h2>Lệnh cần nhớ</h2>
+<pre><code>docker pull nginx:1.27
+docker image ls                              # image đã có; thêm --digests để thấy digest
+docker image inspect nginx:1.27              # cấu hình: Env, Cmd, Entrypoint, danh sách layer
+docker history nginx:1.27                    # từng layer: lệnh tạo ra và kích thước
+docker image ls --filter dangling=true       # image không còn tag
+docker image prune                           # xoá image dangling
+docker save -o nginx.tar nginx:1.27          # xuất image (kèm layer) ra file
+docker load -i nginx.tar
+docker diff CONTAINER                        # các file đã đổi trong lớp ghi
+docker export CONTAINER &gt; fs.tar             # filesystem phẳng của container (không phải image)</code></pre>
+<p><code>docker save</code>/<code>load</code> làm việc với <b>image</b> (giữ layer và tag, dùng để chuyển image sang máy không có mạng), còn <code>docker export</code> chỉ lấy filesystem phẳng của một <b>container</b>.</p>
+<div class="callout tip"><b>Đừng dùng docker commit để làm image</b><p><code>docker commit</code> đóng băng container thành image, nhưng không ai biết nó được tạo thế nào và không tái tạo được. Hãy luôn mô tả bằng Dockerfile, để image có thể build lại từ mã nguồn.</p></div>
+<div class="callout lab"><b>Nhìn layer và lớp ghi</b><pre><code>docker pull alpine:3.20
+docker history alpine:3.20
+docker image inspect alpine:3.20 --format '{{json .RootFS.Layers}}'
+docker run -d --name t alpine:3.20 sleep 300
+docker exec t sh -c 'echo hi &gt; /tmp/new.txt; rm /etc/motd'
+docker diff t                                # A = thêm, C = đổi, D = xoá
+docker rm -f t
+docker image ls --digests alpine</code></pre>
+<p>Câu hỏi: lệnh nào trong <code>docker history</code> tạo ra lớp lớn nhất? Sau <code>docker rm</code>, tệp <code>/tmp/new.txt</code> còn không?</p></div>
+</article>
+<article class="page" data-id="dockerfile" data-group="Image" data-title="Dockerfile: tham chiếu các lệnh" hidden>
+<h1>Dockerfile: tham chiếu các lệnh</h1>
+<p class="lead">Dockerfile là công thức build image. Trang này tóm tắt các lệnh, và những cặp dễ nhầm: CMD với ENTRYPOINT, COPY với ADD, ARG với ENV.</p>
+<h2>Ví dụ tối thiểu</h2>
+<pre><code><span class="cm"># syntax=docker/dockerfile:1</span>
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+USER 10001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/health')" || exit 1
+CMD ["python", "-m", "app"]</code></pre>
+<h2>Các lệnh</h2>
+<div class="tw"><table><tr><th>Lệnh</th><th>Tác dụng</th><th>Ghi chú</th></tr><tr><td><code>FROM</code></td><td>Chọn image nền; có thể nhiều <code>FROM</code> (multi-stage)</td><td>Ghim phiên bản, tốt hơn là digest</td></tr><tr><td><code>RUN</code></td><td>Chạy lệnh lúc build, tạo layer mới</td><td>Gom các lệnh liên quan trong một <code>RUN</code></td></tr><tr><td><code>COPY</code></td><td>Chép file từ build context vào image</td><td>Ưu tiên hơn <code>ADD</code></td></tr><tr><td><code>ADD</code></td><td>Như <code>COPY</code> nhưng giải nén tar cục bộ và tải URL</td><td>Chỉ dùng khi cần giải nén tar</td></tr><tr><td><code>WORKDIR</code></td><td>Đặt thư mục làm việc (tạo nếu chưa có)</td><td>Dùng thay cho <code>RUN cd</code></td></tr><tr><td><code>ENV</code></td><td>Biến môi trường, tồn tại cả lúc chạy</td><td>Không đặt bí mật ở đây</td></tr><tr><td><code>ARG</code></td><td>Biến chỉ có lúc build (<code>--build-arg</code>)</td><td>Hiện trong <code>docker history</code>: không dùng cho bí mật</td></tr><tr><td><code>USER</code></td><td>Chạy các lệnh sau (và container) bằng user này</td><td>Luôn đặt user non-root</td></tr><tr><td><code>EXPOSE</code></td><td>Ghi chú cổng ứng dụng lắng nghe</td><td><b>Không</b> mở cổng, chỉ là tài liệu</td></tr><tr><td><code>VOLUME</code></td><td>Khai báo mount point; tạo volume ẩn danh</td><td>Thường nên tránh, khai báo ở <code>docker run</code> hoặc Compose</td></tr><tr><td><code>CMD</code></td><td>Lệnh mặc định khi chạy</td><td>Bị ghi đè bởi tham số sau tên image</td></tr><tr><td><code>ENTRYPOINT</code></td><td>Chương trình chính, cố định</td><td><code>CMD</code> thành tham số của nó</td></tr><tr><td><code>HEALTHCHECK</code></td><td>Lệnh kiểm tra container khoẻ</td><td>Trạng thái xem ở <code>docker ps</code></td></tr><tr><td><code>STOPSIGNAL</code></td><td>Signal dừng (mặc định <code>SIGTERM</code>)</td><td>Đặt khi ứng dụng cần signal khác</td></tr><tr><td><code>LABEL</code></td><td>Metadata (chuẩn OCI: <code>org.opencontainers.image.*</code>)</td><td>Ghi nguồn, phiên bản, giấy phép</td></tr><tr><td><code>SHELL</code></td><td>Đổi shell cho dạng shell form</td><td>Hiếm dùng</td></tr></table></div>
+<h2>CMD, ENTRYPOINT và hai dạng viết</h2>
+<p>Mỗi lệnh <code>RUN</code>, <code>CMD</code>, <code>ENTRYPOINT</code> có hai dạng:</p>
+<ul><li><b>Exec form</b>: <code>CMD ["python", "app.py"]</code>. Chạy chương trình <b>trực tiếp</b>, nó là PID 1 và nhận signal trực tiếp.</li><li><b>Shell form</b>: <code>CMD python app.py</code>. Docker chạy <code>/bin/sh -c "python app.py"</code>: PID 1 là <code>sh</code>, và nhiều shell <b>không chuyển tiếp signal</b>, nên <code>docker stop</code> không tắt êm được ứng dụng (xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-process" target="_blank" rel="noopener">Process và PID 1</a>).</li></ul>
+<p>Cách dùng thường gặp:</p>
+<div class="tw"><table><tr><th>Mục đích</th><th>Viết</th></tr><tr><td>Chạy một ứng dụng, cho phép ghi đè lệnh khi debug</td><td><code>CMD ["app", "--port", "8000"]</code></td></tr><tr><td>Image hoạt động như một công cụ (<code>docker run img arg1 arg2</code>)</td><td><code>ENTRYPOINT ["tool"]</code> và <code>CMD ["--help"]</code></td></tr><tr><td>Cần xử lý biến môi trường rồi mới chạy</td><td>Script <code>entrypoint.sh</code> kết thúc bằng <code>exec "$@"</code></td></tr></table></div>
+<p><code>exec "$@"</code> ở cuối script rất quan trọng: nó <b>thay</b> shell bằng ứng dụng, để ứng dụng trở thành PID 1 và nhận signal.</p>
+<h2>ARG và ENV</h2>
+<p><code>ARG</code> chỉ tồn tại lúc build; <code>ENV</code> tồn tại cả trong image và container lúc chạy. Cả hai đều <b>để lộ</b> giá trị qua <code>docker history</code> và <code>docker inspect</code>, nên đừng truyền token hay mật khẩu bằng hai cách này (xem <a href="#build-best">Dockerfile tốt</a> về <code>--mount=type=secret</code>).</p>
+<h2>Build context và .dockerignore</h2>
+<p><code>docker build .</code> gửi toàn bộ thư mục hiện tại (<b>build context</b>) cho daemon. Context lớn làm build chậm và dễ chép nhầm file nhạy cảm vào image. Tạo <code>.dockerignore</code>:</p>
+<pre><code>.git
+node_modules
+*.log
+.env
+**/__pycache__
+dist</code></pre>
+<pre><code>docker build -t web:dev .
+docker build -t web:dev -f docker/Dockerfile.prod .
+docker build --build-arg VERSION=1.4.2 --target runtime -t web:1.4.2 .</code></pre>
+<div class="callout lab"><b>Hiểu PID 1 qua hai dạng viết</b><pre><code>mkdir -p ~/df &amp;&amp; cd ~/df
+cat &gt; app.py &lt;&lt;'EOF'
+import signal, sys, time
+signal.signal(signal.SIGTERM, lambda *a: (print("nhận SIGTERM, thoát", flush=True), sys.exit(0)))
+print("đã khởi động", flush=True)
+while True: time.sleep(1)
+EOF
+printf 'FROM python:3.12-alpine\nCOPY app.py .\nCMD python app.py; echo bye\n' &gt; Dockerfile.shell
+printf 'FROM python:3.12-alpine\nCOPY app.py .\nCMD ["python","app.py"]\n' &gt; Dockerfile.exec
+docker build -q -t t-shell -f Dockerfile.shell . &amp;&amp; docker build -q -t t-exec -f Dockerfile.exec .
+docker run -d --name a t-shell &amp;&amp; docker run -d --name b t-exec
+docker exec a ps; docker exec b ps            # a: PID 1 là "sh -c ...", b: PID 1 là python
+time docker stop a; time docker stop b        # a mất ~10 giây (bị SIGKILL), b dừng ngay
+docker logs b                                 # có dòng "nhận SIGTERM, thoát"
+docker rm -f a b</code></pre>
+<p>Giải thích vì sao <code>docker stop a</code> chậm: signal tới PID 1 là <code>sh</code>, không có handler nên bị bỏ qua. (Dùng <code>;</code> trong shell form để shell không tối ưu hoá thành <code>exec</code>.)</p></div>
+</article>
+<article class="page" data-id="build-best" data-group="Image" data-title="Viết Dockerfile tốt: cache, multi-stage và buildx" hidden>
+<h1>Viết Dockerfile tốt: cache, multi-stage và buildx</h1>
+<p class="lead">Image tốt build nhanh, nhỏ, chạy bằng user thường và không chứa bí mật. Bốn kỹ thuật làm nên phần lớn khác biệt: thứ tự layer để tận dụng cache, multi-stage, BuildKit và quản lý bí mật.</p>
+<h2>Thứ tự layer và cache</h2>
+<p>Docker dùng lại một layer từ cache nếu lệnh <b>và mọi thứ nó đọc</b> không đổi. Khi một layer bị vô hiệu, <b>mọi layer sau nó</b> đều phải build lại. Vì vậy: đặt thứ <b>ít đổi</b> lên trên, thứ <b>hay đổi</b> (mã nguồn) xuống dưới.</p>
+<pre><code><span class="cm"># Xấu: sửa một dòng code là cài lại toàn bộ thư viện</span>
+COPY . .
+RUN pip install -r requirements.txt
+
+<span class="cm"># Tốt: chỉ cài lại thư viện khi requirements.txt đổi</span>
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .</code></pre>
+<p>Gom các lệnh dọn dẹp <b>cùng một <code>RUN</code></b> với lệnh tạo ra rác, vì xoá ở layer sau không thu nhỏ image:</p>
+<pre><code>RUN apt-get update \
+ &amp;&amp; apt-get install -y --no-install-recommends curl ca-certificates \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*</code></pre>
+<h2>Multi-stage build</h2>
+<p>Dùng nhiều <code>FROM</code>: giai đoạn build có đầy đủ compiler, chỉ <b>chép kết quả</b> sang giai đoạn runtime nhỏ gọn.</p>
+<pre><code><span class="cm"># syntax=docker/dockerfile:1</span>
+FROM golang:1.23 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/app ./cmd/app
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/app /app
+USER nonroot
+ENTRYPOINT ["/app"]</code></pre>
+<p>Ví dụ Node.js (giai đoạn runtime dùng image nhỏ và user không phải root):</p>
+<pre><code>FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+FROM node:22-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+USER node
+CMD ["node", "server.js"]</code></pre>
+<p><code>docker build --target build .</code> dừng ở một giai đoạn cụ thể (ví dụ để chạy test hoặc debug). Tên image nền (<code>golang:1.23</code>, <code>distroless</code>...) chọn phiên bản bạn dùng thật, đây chỉ là ví dụ.</p>
+<h2>Chọn image nền</h2>
+<div class="tw"><table><tr><th>Loại</th><th>Ưu</th><th>Nhược</th></tr><tr><td><code>debian</code>/<code>ubuntu</code> (đầy đủ)</td><td>Tương thích tốt, nhiều công cụ</td><td>Lớn, nhiều thành phần</td></tr><tr><td><code>-slim</code></td><td>Nhỏ hơn, vẫn dùng glibc</td><td>Thiếu một số công cụ</td></tr><tr><td><code>alpine</code></td><td>Rất nhỏ</td><td>Dùng musl thay glibc: một số phần mềm biên dịch sẵn hoặc native extension gặp lỗi tương thích</td></tr><tr><td>distroless</td><td>Chỉ có ứng dụng và runtime, ít bề mặt tấn công</td><td>Không có shell nên khó debug</td></tr><tr><td><code>scratch</code></td><td>Rỗng, cho file nhị phân tĩnh (Go, Rust)</td><td>Không có gì, kể cả chứng chỉ CA và múi giờ nếu bạn không chép vào</td></tr></table></div>
+<h2>BuildKit: cache mount, secret và buildx</h2>
+<p><b>BuildKit</b> là engine build mặc định của Docker hiện nay (<code>docker build</code> và <code>docker buildx build</code> đều dùng nó). Một số tính năng cần dòng <code># syntax=docker/dockerfile:1</code> ở đầu Dockerfile.</p>
+<p><b>Cache mount</b>: giữ cache của trình quản lý gói giữa các lần build, mà không đưa vào image.</p>
+<pre><code>RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt</code></pre>
+<p><b>Secret mount</b>: dùng bí mật lúc build (token tải thư viện riêng) mà không để lại trong layer hay <code>docker history</code>.</p>
+<pre><code>RUN --mount=type=secret,id=npm_token \
+    NPM_TOKEN=$(cat /run/secrets/npm_token) npm ci</code></pre>
+<pre><code>docker build --secret id=npm_token,src=$HOME/.npm_token -t web:dev .</code></pre>
+<p><b>Build đa nền tảng</b> với <code>buildx</code>:</p>
+<pre><code>docker buildx create --use
+docker buildx build --platform linux/amd64,linux/arm64 -t registry.example.com/web:1.4.2 --push .</code></pre>
+<p><b>Chia sẻ cache giữa các máy CI</b> qua registry:</p>
+<pre><code>docker buildx build \
+  --cache-from type=registry,ref=registry.example.com/web:buildcache \
+  --cache-to   type=registry,ref=registry.example.com/web:buildcache,mode=max \
+  -t registry.example.com/web:1.4.2 --push .</code></pre>
+<p><code>--progress=plain</code> in toàn bộ output để xem lệnh nào chậm hay lỗi.</p>
+<h2>Danh sách kiểm tra</h2>
+<div class="tw"><table><tr><th>Việc</th><th>Vì sao</th></tr><tr><td>Ghim phiên bản (hoặc digest) của image nền</td><td>Build lặp lại được, tránh bị đổi ngầm</td></tr><tr><td>Multi-stage; runtime chỉ chứa thứ cần để chạy</td><td>Nhỏ và ít lỗ hổng</td></tr><tr><td><code>.dockerignore</code></td><td>Context nhỏ, không chép nhầm <code>.git</code>, <code>.env</code></td></tr><tr><td>Thư viện cài trước, mã nguồn chép sau</td><td>Tận dụng cache</td></tr><tr><td><code>USER</code> non-root</td><td>Giảm tác hại nếu bị xâm nhập</td></tr><tr><td>Không đặt bí mật vào <code>ARG</code>, <code>ENV</code>, <code>COPY</code></td><td>Lộ qua layer và <code>docker history</code></td></tr><tr><td>Exec form cho <code>CMD</code>/<code>ENTRYPOINT</code></td><td>Ứng dụng là PID 1 và nhận signal</td></tr><tr><td>Có <code>HEALTHCHECK</code> (nếu không chạy dưới Kubernetes)</td><td>Biết container khoẻ hay không</td></tr><tr><td>Một tiến trình chính mỗi container</td><td>Dễ giám sát, dễ scale</td></tr><tr><td>Gắn <code>LABEL</code> nguồn gốc (OCI)</td><td>Truy ngược được image từ repo nào</td></tr></table></div>
+<p>Phân tích image: <code>docker history IMAGE</code>, và công cụ <code>dive</code> cho phép duyệt từng layer để tìm file thừa. Chuỗi cung ứng (quét, SBOM, ký image): xem <a href="https://tracviethustcs.github.io/k8s-study-notes/#adv-supply-chain" target="_blank" rel="noopener">Bảo mật chuỗi cung ứng image</a>.</p>
+<div class="callout lab"><b>So sánh hai cách build</b><pre><code>mkdir -p ~/bb &amp;&amp; cd ~/bb
+cat &gt; main.go &lt;&lt;'EOF'
+package main
+import "fmt"
+func main() { fmt.Println("xin chào từ container") }
+EOF
+printf 'module demo\ngo 1.22\n' &gt; go.mod
+printf 'FROM golang:1.23\nWORKDIR /src\nCOPY . .\nRUN CGO_ENABLED=0 go build -o /app .\nCMD ["/app"]\n' &gt; Dockerfile.single
+printf 'FROM golang:1.23 AS build\nWORKDIR /src\nCOPY . .\nRUN CGO_ENABLED=0 go build -o /app .\nFROM scratch\nCOPY --from=build /app /app\nCMD ["/app"]\n' &gt; Dockerfile.multi
+docker build -q -t go-single -f Dockerfile.single . &amp;&amp; docker build -q -t go-multi -f Dockerfile.multi .
+docker image ls | grep go-
+docker run --rm go-multi</code></pre>
+<p>So sánh kích thước hai image, và giải thích vì sao bản multi-stage không cần shell hay compiler.</p></div>
+</article>
+<article class="page" data-id="registry" data-group="Image" data-title="Registry, tag và chiến lược đặt tên" hidden>
+<h1>Registry, tag và chiến lược đặt tên</h1>
+<p class="lead">Registry là nơi image được lưu và phân phối. Cách bạn đặt tag quyết định việc triển khai có truy vết, lặp lại và quay lui được hay không.</p>
+<h2>Tên đầy đủ của một image</h2>
+<pre><code>registry.example.com:5000 / team / web : 1.4.2
+\_______ registry ______/   \ngăn/  \tên/ \tag/</code></pre>
+<ul><li>Không ghi registry thì mặc định là Docker Hub (<code>docker.io</code>).</li><li>Không ghi tag thì mặc định là <code>latest</code>, <b>không có nghĩa là bản mới nhất</b>, chỉ là một tag tên như vậy.</li><li>Có thể thay tag bằng digest: <code>web@sha256:...</code>.</li></ul>
+<h2>Các loại registry</h2>
+<div class="tw"><table><tr><th>Loại</th><th>Ví dụ</th><th>Ghi chú</th></tr><tr><td>Công cộng</td><td>Docker Hub</td><td>Có giới hạn số lần pull cho tài khoản ẩn danh và miễn phí, xem chính sách hiện hành; không nên phụ thuộc trực tiếp trong CI production</td></tr><tr><td>Đi kèm nền tảng</td><td>GHCR (GitHub), GitLab Registry, ECR, ACR, GAR</td><td>Tích hợp xác thực và quyền với nền tảng</td></tr><tr><td>Tự dựng</td><td>Harbor, Nexus, Artifactory, <code>registry:2</code></td><td>Kiểm soát hoàn toàn, có thể quét và sao chép image</td></tr></table></div>
+<h2>Thao tác cơ bản</h2>
+<pre><code>docker login registry.example.com
+docker tag web:dev registry.example.com/team/web:1.4.2
+docker push registry.example.com/team/web:1.4.2
+docker pull registry.example.com/team/web:1.4.2
+docker logout registry.example.com</code></pre>
+<p>Thông tin đăng nhập lưu ở <code>~/.docker/config.json</code>. Mặc định có thể chỉ mã hoá base64, <b>không phải mã hoá thật</b>: dùng credential helper (<code>credsStore</code>) của hệ điều hành, và trong CI dùng token ngắn hạn thay vì mật khẩu cá nhân.</p>
+<h2>Chiến lược đặt tag</h2>
+<div class="tw"><table><tr><th>Tag</th><th>Dùng để</th><th>Cẩn thận</th></tr><tr><td><code>1.4.2</code> (semver)</td><td>Phát hành chính thức</td><td>Coi là <b>bất biến</b>: không bao giờ push đè</td></tr><tr><td><code>1.4</code>, <code>1</code></td><td>Tiện cho người dùng muốn nhận bản vá</td><td>Là tag di động, đừng triển khai production bằng nó</td></tr><tr><td><code>git-3f1a9c2</code> (git SHA)</td><td>Truy ngược chính xác commit</td><td>Rất tốt để triển khai: một SHA một image</td></tr><tr><td><code>main</code>, <code>dev</code></td><td>Môi trường thử</td><td>Di động, có thể đổi bất kỳ lúc nào</td></tr><tr><td><code>latest</code></td><td>Gần như không nên dùng để triển khai</td><td>Không biết đang chạy bản nào, không quay lui được</td></tr></table></div>
+<p>Quy tắc thực tế: CI build <b>một lần</b>, gắn tag theo git SHA (và semver khi release), rồi <b>đưa chính image đó</b> qua các môi trường (build once, deploy many) thay vì build lại cho từng môi trường. Triển khai bằng digest để không bị đổi ngầm. Xem thêm trong ghi chú <a href="https://tracviethustcs.github.io/cicd-release-notes/" target="_blank" rel="noopener">CI/CD</a>.</p>
+<h2>Mirror, cache và dọn dẹp</h2>
+<ul><li><b>Pull-through cache / mirror</b>: registry nội bộ trung gian giảm tải ra ngoài, tránh giới hạn pull và vẫn chạy được khi registry công cộng gặp sự cố. Cấu hình <code>registry-mirrors</code> trong <code>daemon.json</code> (xem <a href="#daemon-logs">Daemon và log</a>).</li><li><b>Retention</b>: đặt chính sách xoá image cũ (theo tuổi, số lượng), nếu không registry đầy dần. Với <code>registry:2</code> cần chạy garbage collect.</li><li><b>Quét lỗ hổng</b> ở registry (Harbor tích hợp Trivy) và quét lại định kỳ.</li><li><b>Sao chép giữa các registry</b> (<code>crane copy</code>, <code>skopeo copy</code>) để mirror image đã duyệt.</li></ul>
+<pre><code>docker run -d -p 127.0.0.1:5000:5000 --name registry registry:2
+docker tag alpine:3.20 localhost:5000/lab/alpine:3.20
+docker push localhost:5000/lab/alpine:3.20
+curl -s http://localhost:5000/v2/_catalog
+curl -s http://localhost:5000/v2/lab/alpine/tags/list</code></pre>
+<div class="callout lab"><b>Chạy registry riêng và thử tag bất biến</b><pre><code>docker run -d -p 127.0.0.1:5000:5000 --name registry registry:2
+docker pull alpine:3.20 &amp;&amp; docker tag alpine:3.20 localhost:5000/lab/app:1.0
+docker push localhost:5000/lab/app:1.0
+docker image ls --digests localhost:5000/lab/app
+docker rmi localhost:5000/lab/app:1.0 &amp;&amp; docker pull localhost:5000/lab/app:1.0
+curl -s http://localhost:5000/v2/_catalog
+docker rm -f registry</code></pre>
+<p>Ghi lại digest trước và sau khi pull. Chúng có giống nhau không, và điều đó cho biết gì về digest?</p></div>
+</article>
+<article class="page" data-id="run" data-group="Container" data-title="Chạy container: docker run và vòng đời" hidden>
+<h1>Chạy container: docker run và vòng đời</h1>
+<p class="lead"><code>docker run</code> là lệnh dùng nhiều nhất. Nắm các tuỳ chọn chính và vòng đời container giúp bạn điều khiển và debug mà không phải đoán.</p>
+<h2>Vòng đời</h2>
+<pre class="ascii"><code>   docker create            docker start          docker stop / kill, hoặc tiến trình tự thoát
+ (image) ---------&gt; created ------------&gt; running ------------------------------------&gt; exited
+                                            |   ^                                         |
+                                  pause     |   | unpause                                 | docker start
+                                            v   |                                         | (chạy lại)
+                                            paused                                        v
+                                                                                       running
+                    docker rm: xoá container (từ created hoặc exited) -&gt; mất lớp ghi và log</code></pre>
+<p><code>docker run</code> = <code>docker create</code> + <code>docker start</code> (+ attach nếu không có <code>-d</code>). Container đã thoát (<code>exited</code>) <b>vẫn còn</b> trên đĩa cùng lớp ghi và log cho tới khi <code>docker rm</code>; vì thế <code>docker ps -a</code> hiện cả container đã dừng.</p>
+<h2>Các tuỳ chọn hay dùng</h2>
+<div class="tw"><table><tr><th>Tuỳ chọn</th><th>Tác dụng</th></tr><tr><td><code>-d</code></td><td>Chạy nền (detached)</td></tr><tr><td><code>-it</code></td><td>Giao tiếp tương tác: <code>-i</code> giữ stdin, <code>-t</code> cấp terminal (dùng cho shell)</td></tr><tr><td><code>--name web</code></td><td>Đặt tên (tên không được trùng)</td></tr><tr><td><code>--rm</code></td><td>Tự xoá container khi thoát (cho lệnh chạy một lần)</td></tr><tr><td><code>-p 8080:80</code></td><td>Publish cổng host:container (xem <a href="#networking">Mạng</a>)</td></tr><tr><td><code>-e KEY=value</code>, <code>--env-file f</code></td><td>Biến môi trường</td></tr><tr><td><code>-v name:/path</code>, <code>--mount</code></td><td>Gắn volume hoặc bind mount (xem <a href="#volumes">Volume</a>)</td></tr><tr><td><code>--network net</code></td><td>Nối mạng người dùng tạo</td></tr><tr><td><code>--restart unless-stopped</code></td><td>Chính sách tự khởi động lại</td></tr><tr><td><code>--user 1000:1000</code></td><td>Chạy bằng user chỉ định</td></tr><tr><td><code>--init</code></td><td>Dùng init nhỏ (tini) làm PID 1: xử lý signal và dọn zombie</td></tr><tr><td><code>--read-only</code>, <code>--cap-drop</code>, <code>--security-opt</code></td><td>Giảm quyền (xem <a href="#security">Bảo mật</a>)</td></tr><tr><td><code>-m</code>, <code>--cpus</code>, <code>--pids-limit</code></td><td>Giới hạn tài nguyên (xem <a href="#resources">trang riêng</a>)</td></tr><tr><td><code>--entrypoint</code></td><td>Ghi đè entrypoint (hay dùng để vào <code>sh</code> debug)</td></tr></table></div>
+<p>Mọi thứ sau tên image là <b>tham số cho container</b>, không phải cho Docker: <code>docker run -it alpine sh -c "echo hi"</code>.</p>
+<h2>Restart policy</h2>
+<div class="tw"><table><tr><th>Giá trị</th><th>Hành vi</th></tr><tr><td><code>no</code> (mặc định)</td><td>Không tự khởi động lại</td></tr><tr><td><code>on-failure[:N]</code></td><td>Chỉ khi thoát với mã khác 0, tối đa N lần</td></tr><tr><td><code>always</code></td><td>Luôn khởi động lại, kể cả sau khi daemon khởi động</td></tr><tr><td><code>unless-stopped</code></td><td>Như <code>always</code>, nhưng không khởi động lại nếu bạn đã chủ động <code>docker stop</code></td></tr></table></div>
+<p>Khởi động lại tự động che lỗi: container crash liên tục sẽ lặp (Docker tăng dần khoảng chờ). Luôn kèm giám sát và xem <code>RestartCount</code>.</p>
+<h2>Dừng container</h2>
+<p><code>docker stop</code> gửi <code>SIGTERM</code> tới PID 1, chờ 10 giây (đổi bằng <code>-t</code>), rồi gửi <code>SIGKILL</code>. <code>docker kill</code> gửi <code>SIGKILL</code> ngay (hoặc <code>-s</code> signal khác). Muốn tắt êm thì ứng dụng phải nhận và xử lý <code>SIGTERM</code>: dùng exec form hoặc <code>--init</code> (xem <a href="#dockerfile">Dockerfile</a>).</p>
+<p>Mã thoát (<code>docker inspect -f '{{.State.ExitCode}}'</code>):</p>
+<div class="tw"><table><tr><th>Mã</th><th>Ý nghĩa</th></tr><tr><td>0</td><td>Thoát bình thường</td></tr><tr><td>1</td><td>Lỗi ứng dụng</td></tr><tr><td>125</td><td>Lỗi từ chính <code>docker run</code> (tuỳ chọn sai)</td></tr><tr><td>126</td><td>Lệnh có nhưng không thực thi được (thiếu quyền)</td></tr><tr><td>127</td><td>Không tìm thấy lệnh</td></tr><tr><td>137</td><td>Bị <code>SIGKILL</code> (thường do OOM, hoặc <code>docker kill</code>/hết thời gian stop)</td></tr><tr><td>143</td><td>Nhận <code>SIGTERM</code> và thoát</td></tr></table></div>
+<h2>Quan sát và tương tác</h2>
+<pre><code>docker ps                                   # đang chạy; -a: cả đã dừng
+docker logs -f --tail 100 --since 10m web
+docker exec -it web sh                      # chạy lệnh trong container đang chạy
+docker cp web:/etc/nginx/nginx.conf .
+docker inspect web                          # JSON đầy đủ
+docker inspect -f '{{.State.Status}} {{.State.ExitCode}} {{.State.OOMKilled}}' web
+docker top web                              # process bên trong
+docker stats --no-stream                    # CPU, RAM, mạng, I/O
+docker events --since 10m                   # sự kiện của daemon
+docker ps -a --filter status=exited</code></pre>
+<div class="callout lab"><b>Vòng đời bằng tay</b><pre><code>docker create --name lc alpine:3.20 sh -c 'echo xong; exit 3'
+docker ps -a --filter name=lc                    # created
+docker start -a lc                               # in "xong"
+docker inspect -f '{{.State.Status}} {{.State.ExitCode}}' lc    # exited 3
+docker run -d --name loop --restart on-failure:3 alpine:3.20 sh -c 'exit 1'
+sleep 12; docker inspect -f 'restart={{.RestartCount}} status={{.State.Status}}' loop
+docker rm -f lc loop</code></pre>
+<p>Giải thích số lần restart bạn thấy và vì sao container cuối cùng dừng hẳn.</p></div>
+</article>
+<article class="page" data-id="resources" data-group="Container" data-title="Giới hạn tài nguyên" hidden>
+<h1>Giới hạn tài nguyên</h1>
+<p class="lead">Không giới hạn thì một container hỏng có thể làm cạn CPU, RAM hay số process của cả máy. Docker dịch các tuỳ chọn thành cgroup, nên hành vi chính là hành vi của kernel.</p>
+<h2>Các giới hạn</h2>
+<div class="tw"><table><tr><th>Tuỳ chọn</th><th>Tác dụng</th></tr><tr><td><code>-m 256m</code> (<code>--memory</code>)</td><td>Trần bộ nhớ; vượt thì OOM kill trong cgroup</td></tr><tr><td><code>--memory-swap</code></td><td>Trần RAM + swap (đặt bằng <code>--memory</code> để tắt swap cho container)</td></tr><tr><td><code>--memory-reservation</code></td><td>Mức "mềm", kernel thu hồi bộ nhớ khi máy thiếu</td></tr><tr><td><code>--cpus 1.5</code></td><td>Tối đa 1,5 core (throttle theo quota)</td></tr><tr><td><code>--cpu-shares 512</code></td><td>Trọng số tương đối khi tranh chấp (mặc định 1024)</td></tr><tr><td><code>--cpuset-cpus 0,1</code></td><td>Ghim vào các core cụ thể</td></tr><tr><td><code>--pids-limit 200</code></td><td>Giới hạn số process (chống fork bomb)</td></tr><tr><td><code>--ulimit nofile=65536:65536</code></td><td>Giới hạn số file descriptor</td></tr><tr><td><code>--blkio-weight</code>, <code>--device-read-bps</code></td><td>Giới hạn I/O đĩa</td></tr></table></div>
+<pre><code>docker run -d --name api -m 512m --memory-swap 512m --cpus 1 --pids-limit 200 myorg/api:1.4.2</code></pre>
+<h2>CPU và bộ nhớ vượt trần khác nhau</h2>
+<p>Giống phần giải thích ở <a href="https://tracviethustcs.github.io/k8s-study-notes/#ops-resources" target="_blank" rel="noopener">Tài nguyên trong Kubernetes</a>: CPU vượt trần thì bị <b>throttle</b> (làm chậm), còn bộ nhớ vượt trần thì bị <b>OOM kill</b> (exit code 137). Một container OOM không phải máy hết RAM mà là chính cgroup của nó đầy.</p>
+<pre><code>docker inspect -f 'oom={{.State.OOMKilled}} exit={{.State.ExitCode}}' api
+docker stats --no-stream api
+ID=$(docker inspect -f '{{.Id}}' api)
+cat /sys/fs/cgroup/system.slice/docker-$ID.scope/memory.max      # cgroup v2, driver systemd
+cat /sys/fs/cgroup/system.slice/docker-$ID.scope/cpu.max</code></pre>
+<p>Đường dẫn cgroup phụ thuộc cgroup driver và phiên bản; xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-cgroup" target="_blank" rel="noopener">cgroups v2</a>. Vài lưu ý:</p>
+<ul><li><code>docker stats</code> hiện <code>CPU %</code> theo core: 200% nghĩa là dùng hai core đầy. <code>MEM USAGE</code> thường <b>không tính page cache</b>, nên con số có thể thấp hơn những gì <code>memory.current</code> của cgroup báo.</li><li>Ứng dụng có runtime tự quản lý bộ nhớ (JVM, Node, Go): đặt heap <b>thấp hơn</b> giới hạn container, vì còn bộ nhớ ngoài heap. Các bản runtime mới nhận biết giới hạn cgroup, nhưng nên kiểm chứng với phiên bản bạn dùng.</li><li>Đặt giới hạn bộ nhớ quá sát mức dùng thật sẽ gây OOM vào lúc cao điểm; cần có đệm.</li></ul>
+<h2>Thói quen tốt</h2>
+<ul><li>Mọi container production đều có giới hạn bộ nhớ và <code>--pids-limit</code>.</li><li>Đo mức dùng thật trước khi đặt số (<code>docker stats</code>, Prometheus + cAdvisor).</li><li>Với Compose, giới hạn khai báo trong <code>deploy.resources.limits</code> (xem <a href="#compose-patterns">Compose thực tế</a>).</li></ul>
+<div class="callout lab"><b>Gây OOM có kiểm soát</b><pre><code>docker run --rm --name oom -m 64m --memory-swap 64m python:3.12-alpine \
+  python -c "b=[]; [b.append(bytearray(8*1024*1024)) for _ in range(100)]"
+echo "exit=$?"                                    # 137
+docker run -d --name oom2 -m 64m --memory-swap 64m python:3.12-alpine \
+  python -c "b=[]; [b.append(bytearray(8*1024*1024)) for _ in range(100)]"
+sleep 3; docker inspect -f 'oom={{.State.OOMKilled}} exit={{.State.ExitCode}}' oom2
+dmesg -T | tail -5 | grep -i -E "memory cgroup|oom" ; docker rm -f oom2</code></pre>
+<p>Trả lời: dòng log kernel nói gì về cgroup nào bị OOM? Mã thoát 137 được tính ra sao?</p></div>
+</article>
+<article class="page" data-id="volumes" data-group="Lưu trữ và mạng" data-title="Volume, bind mount và tmpfs" hidden>
+<h1>Volume, bind mount và tmpfs</h1>
+<p class="lead">Lớp ghi của container mất khi container bị xoá. Dữ liệu cần giữ phải nằm ở nơi khác: volume do Docker quản lý, thư mục của host gắn vào (bind mount), hoặc RAM (tmpfs).</p>
+<h2>Ba cách lưu dữ liệu</h2>
+<div class="tw"><table><tr><th>Loại</th><th>Dữ liệu nằm ở đâu</th><th>Dùng khi</th><th>Lưu ý</th></tr><tr><td><b>Volume</b> (named)</td><td><code>/var/lib/docker/volumes/NAME/_data</code>, Docker quản lý</td><td>Dữ liệu ứng dụng cần giữ (database, upload)</td><td>Cách được khuyên cho dữ liệu bền; độc lập với đường dẫn host</td></tr><tr><td><b>Bind mount</b></td><td>Thư mục bạn chỉ định trên host</td><td>Mã nguồn khi phát triển, file cấu hình</td><td>Phụ thuộc cấu trúc thư mục host; vấn đề quyền; có thể sửa file host từ container</td></tr><tr><td><b>tmpfs</b></td><td>RAM</td><td>Dữ liệu tạm, nhạy cảm, không cần giữ</td><td>Mất khi container dừng; tốn RAM</td></tr></table></div>
+<pre><code>docker volume create pgdata
+docker run -d --name db -v pgdata:/var/lib/postgresql/data -e POSTGRES_PASSWORD=secret postgres:16
+docker run -d -v "$PWD/conf":/etc/app:ro myorg/app           # bind mount chỉ đọc
+docker run -d --tmpfs /tmp:rw,size=64m myorg/app</code></pre>
+<p>Hai cú pháp:</p>
+<pre><code>-v pgdata:/var/lib/postgresql/data                         # ngắn gọn
+--mount type=volume,source=pgdata,target=/var/lib/postgresql/data     # tường minh
+--mount type=bind,source="$PWD/conf",target=/etc/app,readonly</code></pre>
+<p><code>--mount</code> báo lỗi nếu đường dẫn nguồn của bind mount không tồn tại, còn <code>-v</code> sẽ <b>tự tạo thư mục rỗng</b> (thường là thư mục thuộc root), nguồn gốc của nhiều lỗi quyền khó hiểu.</p>
+<h2>Vòng đời và các cái bẫy</h2>
+<ul><li><b>Volume tồn tại sau khi xoá container</b> (trừ volume ẩn danh khi dùng <code>docker rm -v</code>). Để dọn: <code>docker volume ls</code>, <code>docker volume rm NAME</code>, <code>docker volume prune</code> (xoá volume không có container nào dùng: cẩn thận).</li><li><b>Volume ẩn danh</b> sinh ra từ lệnh <code>VOLUME</code> trong Dockerfile khi bạn không gắn volume có tên: chúng chất đống theo từng lần <code>docker run</code>. Nên gắn volume có tên cho dữ liệu cần giữ.</li><li><b>Khởi tạo nội dung</b>: khi gắn volume <b>trống</b> vào một thư mục đã có dữ liệu trong image, Docker chép dữ liệu image vào volume lần đầu. Bind mount thì <b>che</b> nội dung của image bằng nội dung thư mục host.</li><li><b>Quyền và UID</b>: file do process trong container tạo ra mang UID của process đó (thường không trùng user trên host). Bind mount thư mục mà UID không khớp sẽ lỗi <code>permission denied</code>. Cách xử lý: chạy container với <code>--user "$(id -u):$(id -g)"</code>, hoặc <code>chown</code> thư mục cho UID của ứng dụng, hoặc dùng volume có tên.</li><li><b>SELinux</b> (RHEL, Fedora): thêm hậu tố <code>:z</code> (chia sẻ) hoặc <code>:Z</code> (riêng) vào bind mount, ví dụ <code>-v $PWD/conf:/etc/app:ro,z</code>.</li><li><b>Hiệu năng trên Docker Desktop</b>: bind mount qua VM chậm hơn volume; ưu tiên volume cho thư mục nặng I/O (node_modules, database).</li></ul>
+<h2>Sao lưu và khôi phục volume</h2>
+<pre><code><span class="cm"># Sao lưu volume ra tệp tar</span>
+docker run --rm -v pgdata:/data:ro -v "$PWD":/backup alpine tar czf /backup/pgdata.tgz -C /data .
+<span class="cm"># Khôi phục vào volume mới</span>
+docker volume create pgdata2
+docker run --rm -v pgdata2:/data -v "$PWD":/backup alpine tar xzf /backup/pgdata.tgz -C /data</code></pre>
+<p>Chép file của database đang chạy cho bản sao <b>không nhất quán</b>: với database, dùng công cụ riêng (<code>pg_dump</code>, <code>mysqldump</code>) hoặc dừng container trước khi sao lưu. Xem thêm <a href="https://tracviethustcs.github.io/linux-network-notes/#lx-backup" target="_blank" rel="noopener">Backup, rsync</a>.</p>
+<h2>Dung lượng</h2>
+<pre><code>docker system df                 # image, container, volume, build cache
+docker system df -v
+docker volume ls -f dangling=true</code></pre>
+<div class="callout lab"><b>Dữ liệu sống sót, lớp ghi thì không</b><pre><code>docker volume create demo
+docker run --rm -v demo:/d alpine sh -c 'echo "trong volume" &gt; /d/a.txt'
+docker run --rm -v demo:/d alpine cat /d/a.txt                       # còn
+docker run --rm alpine sh -c 'echo "trong lớp ghi" &gt; /tmp/b.txt'
+docker run --rm alpine cat /tmp/b.txt                                # lỗi: container mới, lớp ghi mới
+sudo ls /var/lib/docker/volumes/demo/_data
+docker volume rm demo</code></pre>
+<p>Giải thích vì sao lần đọc thứ hai thất bại còn lần đầu thì không.</p></div>
+</article>
+<article class="page" data-id="networking" data-group="Lưu trữ và mạng" data-title="Mạng Docker" hidden>
+<h1>Mạng Docker</h1>
+<p class="lead">Mạng Docker là bridge Linux, cặp veth và luật iptables do Docker dựng sẵn. Hiểu các mảnh đó giúp bạn giải thích được vì sao container gọi nhau bằng tên, và vì sao một cổng "mở ra ngoài" đôi khi mở quá tay.</p>
+<h2>Các driver mạng</h2>
+<div class="tw"><table><tr><th>Driver</th><th>Mô tả</th><th>Dùng khi</th></tr><tr><td><code>bridge</code></td><td>Mạng ảo riêng trên một máy, container có IP riêng và ra ngoài qua NAT</td><td>Mặc định và phổ biến nhất</td></tr><tr><td><code>host</code></td><td>Container dùng thẳng mạng của host (không cô lập mạng)</td><td>Cần hiệu năng mạng tối đa, hoặc nhiều cổng; mất cô lập</td></tr><tr><td><code>none</code></td><td>Chỉ có loopback</td><td>Container không cần mạng</td></tr><tr><td><code>overlay</code></td><td>Nối nhiều máy Docker (Swarm)</td><td>Cụm nhiều máy; Kubernetes dùng CNI thay thế</td></tr><tr><td><code>macvlan</code></td><td>Container có MAC và IP ngang hàng với mạng vật lý</td><td>Cần xuất hiện như thiết bị thật trên LAN</td></tr></table></div>
+<h2>Bridge mặc định và bridge người dùng tạo</h2>
+<div class="tw"><table><tr><th></th><th>Bridge mặc định (<code>bridge</code>, <code>docker0</code>)</th><th>Bridge do bạn tạo</th></tr><tr><td>Phân giải tên</td><td><b>Không</b>, chỉ dùng IP (hoặc <code>--link</code> đã lỗi thời)</td><td><b>Có</b>: container gọi nhau bằng tên (DNS nhúng tại <code>127.0.0.11</code>)</td></tr><tr><td>Cô lập</td><td>Mọi container không chỉ định mạng đều ở chung</td><td>Chỉ container nối cùng mạng mới thấy nhau</td></tr><tr><td>Gắn/gỡ khi chạy</td><td>Không linh hoạt</td><td><code>docker network connect/disconnect</code></td></tr></table></div>
+<p>Vì vậy hãy luôn tạo mạng riêng cho mỗi ứng dụng (Compose làm việc này tự động):</p>
+<pre><code>docker network create appnet
+docker run -d --name db --network appnet -e POSTGRES_PASSWORD=secret postgres:16
+docker run --rm --network appnet alpine ping -c1 db            # gọi bằng tên "db"
+docker network inspect appnet</code></pre>
+<h2>Dưới nắp: bridge, veth và iptables</h2>
+<pre class="ascii"><code>   container A (netns)         container B (netns)
+     eth0 172.18.0.2             eth0 172.18.0.3
+        |  (cặp veth)               |  (cặp veth)
+   vethXXXX -----+-------------+---- vethYYYY
+                 |    br-xxxx   |            &lt;- bridge Linux (switch ảo), 172.18.0.1
+                 +------+-------+
+                        |
+                  iptables NAT  (MASQUERADE cho gói đi ra, DNAT cho cổng publish)
+                        |
+                      eth0 của host  ---&gt;  mạng ngoài</code></pre>
+<p>Đây chính là mạng bạn có thể tự dựng bằng <code>ip netns</code>, veth và bridge, xem <a href="https://tracviethustcs.github.io/linux-network-notes/#net-linux" target="_blank" rel="noopener">Mạng trong Linux</a> và <a href="https://tracviethustcs.github.io/linux-network-notes/#net-nat" target="_blank" rel="noopener">NAT</a>. Docker chỉ tự động hoá nó.</p>
+<h2>Publish cổng</h2>
+<p>Container ở bridge có IP riêng, bên ngoài không truy cập được. <code>-p</code> thiết lập luật <b>DNAT</b> để chuyển cổng của host vào container:</p>
+<pre><code>docker run -d -p 8080:80 nginx                    # mọi giao diện của host, cổng 8080 -&gt; 80
+docker run -d -p 127.0.0.1:8080:80 nginx          # chỉ truy cập từ chính máy
+docker run -d -p 8080:80/udp myorg/dns            # UDP
+docker run -d -P nginx                            # cổng host ngẫu nhiên cho mọi cổng EXPOSE
+docker port NAME</code></pre>
+<div class="callout warn"><b>Publish cổng mà không chỉ định địa chỉ là mở ra mọi giao diện</b><p><code>-p 5432:5432</code> cho phép <b>cả mạng</b> kết nối vào database, và vì Docker tự chèn luật iptables riêng, nó <b>bỏ qua <code>ufw</code></b> và nhiều cấu hình firewall bạn tưởng đang bảo vệ. Với dịch vụ chỉ dùng nội bộ: không publish, hoặc bind <code>127.0.0.1</code>, hoặc nối qua mạng Docker. Luật tuỳ chỉnh đặt ở chain <code>DOCKER-USER</code>.</p></div>
+<p><code>EXPOSE</code> trong Dockerfile <b>không mở cổng</b>, chỉ là ghi chú.</p>
+<h2>Truy cập host và DNS</h2>
+<ul><li>Từ container gọi ra máy chủ: trên Docker Desktop dùng <code>host.docker.internal</code>; trên Linux thêm <code>--add-host=host.docker.internal:host-gateway</code>.</li><li>DNS của container lấy từ cấu hình của host, hoặc đặt riêng: <code>--dns 10.0.0.2</code>, <code>--dns-search example.internal</code>.</li><li>Trong mạng người dùng tạo, <code>127.0.0.11</code> là resolver nhúng của Docker: tên container và alias (<code>--network-alias</code>) được phân giải ở đó, các tên khác chuyển cho DNS ngoài.</li></ul>
+<h2>Sự cố thường gặp</h2>
+<div class="tw"><table><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr><tr><td>Container này không gọi được container kia bằng tên</td><td>Đang ở bridge mặc định, hoặc khác mạng</td></tr><tr><td>Từ máy khác không truy cập được cổng đã publish</td><td>Ứng dụng trong container chỉ lắng nghe <code>127.0.0.1</code> thay vì <code>0.0.0.0</code>, hoặc firewall của host/cloud chặn</td></tr><tr><td>Truy cập được từ ngoài dù tưởng đã chặn</td><td><code>-p</code> bỏ qua <code>ufw</code></td></tr><tr><td>Mạng chậm hoặc treo với gói lớn</td><td>MTU khác nhau (VPN, overlay)</td></tr><tr><td>Hai mạng Docker xung đột với mạng văn phòng</td><td>Dải IP mặc định của Docker trùng: đổi <code>default-address-pools</code> trong <code>daemon.json</code></td></tr></table></div>
+<pre><code>docker network ls
+docker network inspect appnet --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{"\n"}}{{end}}'
+sudo iptables -t nat -L -n | grep -E "DOCKER|MASQUERADE"
+sudo nsenter -t "$(docker inspect -f '{{.State.Pid}}' web)" -n ss -tlnp</code></pre>
+<div class="callout lab"><b>Quan sát mạng thật bên dưới</b><pre><code>docker network create labnet
+docker run -d --name n1 --network labnet nginx:alpine
+docker run --rm --network labnet alpine sh -c 'ping -c1 n1; cat /etc/resolv.conf'
+ip -br link | grep -E "br-|veth"
+docker run -d --name n2 -p 127.0.0.1:8081:80 nginx:alpine
+sudo iptables -t nat -L DOCKER -n | grep 8081
+curl -sI localhost:8081 | head -1
+docker rm -f n1 n2 &amp;&amp; docker network rm labnet</code></pre>
+<p>Vẽ sơ đồ: bridge nào, veth nào, và luật DNAT chuyển cổng 8081 tới địa chỉ nào.</p></div>
+</article>
+<article class="page" data-id="compose" data-group="Compose" data-title="Docker Compose cơ bản" hidden>
+<h1>Docker Compose cơ bản</h1>
+<p class="lead">Compose mô tả cả một ứng dụng nhiều container (dịch vụ, mạng, volume) trong một file YAML và điều khiển nó bằng vài lệnh. Phù hợp để phát triển, kiểm thử và chạy trên một máy.</p>
+<h2>Một file compose.yaml</h2>
+<pre><code>services:
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      app:
+        condition: service_healthy
+  app:
+    build: ./app
+    environment:
+      DATABASE_URL: postgres://app:${DB_PASSWORD}@db:5432/app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:</code></pre>
+<p>Các khoá cấp cao nhất: <code>services</code>, <code>networks</code>, <code>volumes</code>, <code>configs</code>, <code>secrets</code>. Khoá <code>version:</code> ở đầu file đã lỗi thời trong Compose hiện nay và có thể bỏ. Compose tự tạo một <b>mạng riêng</b> cho dự án (nên các dịch vụ gọi nhau bằng tên: <code>db</code>, <code>app</code>) và đặt tên tài nguyên theo <code>TÊNDỰÁN-dịch-vụ-số</code> (tên dự án mặc định là tên thư mục).</p>
+<h2>Lệnh hay dùng</h2>
+<div class="tw"><table><tr><th>Lệnh</th><th>Tác dụng</th></tr><tr><td><code>docker compose up -d</code></td><td>Tạo và chạy mọi dịch vụ (build nếu cần)</td></tr><tr><td><code>docker compose up -d --build</code></td><td>Build lại image trước khi chạy</td></tr><tr><td><code>docker compose ps</code></td><td>Trạng thái dịch vụ</td></tr><tr><td><code>docker compose logs -f app</code></td><td>Theo dõi log một dịch vụ</td></tr><tr><td><code>docker compose exec app sh</code></td><td>Vào container đang chạy</td></tr><tr><td><code>docker compose run --rm app pytest</code></td><td>Chạy một lệnh một lần trong container mới</td></tr><tr><td><code>docker compose stop</code> / <code>start</code> / <code>restart</code></td><td>Dừng, chạy lại</td></tr><tr><td><code>docker compose down</code></td><td>Dừng và <b>xoá</b> container và mạng (giữ volume)</td></tr><tr><td><code>docker compose down -v</code></td><td>Xoá cả volume: <b>mất dữ liệu</b></td></tr><tr><td><code>docker compose config</code></td><td>In cấu hình đã ghép và thay biến để kiểm tra</td></tr><tr><td><code>docker compose pull</code></td><td>Tải image mới</td></tr></table></div>
+<p>Compose V2 là plugin của Docker (<code>docker compose</code>, có dấu cách); lệnh <code>docker-compose</code> kiểu cũ (V1) đã bị thay thế.</p>
+<h2>Biến và file môi trường</h2>
+<ul><li><b>Thay thế biến trong chính file YAML</b>: <code>${DB_PASSWORD}</code> lấy từ môi trường shell hoặc từ file <code>.env</code> cùng thư mục với <code>compose.yaml</code>. Giá trị mặc định: <code>${PORT:-8080}</code>, bắt buộc: <code>${DB_PASSWORD:?cần đặt DB_PASSWORD}</code>.</li><li><b>Biến cho container</b>: <code>environment:</code> (khai báo trực tiếp) hoặc <code>env_file: [app.env]</code> (nạp từ file).</li></ul>
+<p>Hai thứ này khác nhau: <code>.env</code> phục vụ việc <b>thay thế trong YAML</b>, còn <code>env_file</code> đưa biến <b>vào container</b>. Đừng commit file chứa bí mật; xem <a href="#compose-patterns">Compose thực tế</a> về <code>secrets</code>.</p>
+<h2>depends_on và healthcheck</h2>
+<p><code>depends_on</code> mặc định chỉ bảo đảm <b>thứ tự khởi động</b>, không phải "đã sẵn sàng". Muốn đợi dịch vụ phụ thuộc thật sự sẵn sàng, đặt <code>healthcheck</code> cho nó và dùng <code>condition: service_healthy</code>. Ứng dụng vẫn nên tự thử kết nối lại khi database chưa sẵn sàng, vì database có thể khởi động lại sau này.</p>
+<h2>Profiles</h2>
+<p>Gom dịch vụ phụ (công cụ debug, seed dữ liệu) vào profile để không chạy mặc định:</p>
+<pre><code>services:
+  adminer:
+    image: adminer
+    profiles: ["debug"]
+    ports: ["127.0.0.1:8081:8080"]</code></pre>
+<pre><code>docker compose --profile debug up -d</code></pre>
+<div class="callout lab"><b>Dựng và phá một stack</b><pre><code>mkdir -p ~/cp &amp;&amp; cd ~/cp
+cat &gt; compose.yaml &lt;&lt;'EOF'
+services:
+  web:
+    image: nginx:1.27-alpine
+    ports: ["127.0.0.1:8080:80"]
+    depends_on:
+      cache: {condition: service_healthy}
+  cache:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 10
+    volumes: [cachedata:/data]
+volumes:
+  cachedata:
+EOF
+docker compose config | head -20
+docker compose up -d &amp;&amp; docker compose ps
+curl -sI localhost:8080 | head -1
+docker compose exec cache redis-cli set k v
+docker compose down                       # volume còn
+docker compose up -d &amp;&amp; docker compose exec cache redis-cli get k
+docker compose down -v</code></pre>
+<p>Quan sát: sau <code>down</code> rồi <code>up</code>, khoá <code>k</code> còn hay mất, và vì sao? Điều gì khác đi khi dùng <code>down -v</code>?</p></div>
+</article>
+<article class="page" data-id="compose-patterns" data-group="Compose" data-title="Compose trong thực tế: dev, prod và bí mật" hidden>
+<h1>Compose trong thực tế: dev, prod và bí mật</h1>
+<p class="lead">Một file Compose dùng được cho cả phát triển lẫn triển khai nhỏ nếu bạn tách phần khác nhau, quản lý bí mật đúng cách và hiểu giới hạn của Compose.</p>
+<h2>Tách cấu hình theo môi trường</h2>
+<p>Compose tự đọc <code>compose.yaml</code> rồi <b>gộp</b> <code>compose.override.yaml</code> nếu có (thường dùng cho dev). Với các môi trường khác, chỉ định rõ các file:</p>
+<pre><code><span class="cm"># compose.yaml : phần chung</span>
+services:
+  app:
+    image: registry.example.com/team/app:${TAG:-dev}
+    restart: unless-stopped
+
+<span class="cm"># compose.override.yaml : chỉ cho dev, tự gộp</span>
+services:
+  app:
+    build: ./app
+    volumes: ["./app:/src"]
+    environment: {DEBUG: "1"}
+    ports: ["127.0.0.1:8000:8000"]
+
+<span class="cm"># compose.prod.yaml : cho production</span>
+services:
+  app:
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 512M}
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}</code></pre>
+<pre><code>docker compose up -d                                            # dev: compose.yaml + override
+docker compose -f compose.yaml -f compose.prod.yaml up -d       # prod</code></pre>
+<p>Dùng <code>docker compose config</code> để xem kết quả gộp. Khi gộp, giá trị đơn bị ghi đè và danh sách được nối thêm.</p>
+<h2>Tái sử dụng bằng YAML anchor và extension field</h2>
+<pre><code>x-common: &amp;common
+  restart: unless-stopped
+  logging: {driver: json-file, options: {max-size: "10m", max-file: "3"}}
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  api:    {&lt;&lt;: *common, image: myorg/api:1.4.2}
+  worker: {&lt;&lt;: *common, image: myorg/worker:1.4.2}</code></pre>
+<h2>Bí mật</h2>
+<p>Biến môi trường dễ lộ (<code>docker inspect</code>, log, file crash). Compose hỗ trợ <code>secrets</code>, gắn dưới dạng <b>file</b> trong <code>/run/secrets/TÊN</code>:</p>
+<pre><code>services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt        # đặt ngoài Git, quyền 600</code></pre>
+<p>Nhiều image chính thức hỗ trợ hậu tố <code>_FILE</code> cho các biến nhạy cảm. Với bí mật thật của production, dùng công cụ quản lý bí mật (Vault, dịch vụ của cloud) thay vì file trên đĩa.</p>
+<h2>Giới hạn và an toàn</h2>
+<pre><code>services:
+  app:
+    image: myorg/app:1.4.2
+    init: true                    # tini làm PID 1
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    user: "10001:10001"
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 200
+    networks: [backend]
+networks:
+  backend: {internal: true}       # không ra internet</code></pre>
+<p>Dùng nhiều mạng để cô lập: ví dụ <code>frontend</code> (proxy và ứng dụng) và <code>backend</code> (ứng dụng và database), cho database chỉ ở <code>backend</code>.</p>
+<h2>Một stack hoàn chỉnh</h2>
+<pre><code>services:
+  proxy:
+    image: nginx:1.27-alpine
+    ports: ["80:80"]
+    volumes: ["./nginx.conf:/etc/nginx/nginx.conf:ro"]
+    networks: [frontend]
+    depends_on: {app: {condition: service_healthy}}
+  app:
+    image: registry.example.com/team/app:1.4.2
+    environment: {REDIS_URL: "redis://cache:6379/0", DATABASE_HOST: db}
+    secrets: [db_password]
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/health"]
+      interval: 10s
+      retries: 5
+    depends_on:
+      db: {condition: service_healthy}
+      cache: {condition: service_started}
+  cache:
+    image: redis:7-alpine
+    networks: [backend]
+  db:
+    image: postgres:16
+    environment: {POSTGRES_PASSWORD_FILE: /run/secrets/db_password}
+    secrets: [db_password]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+networks: {frontend: {}, backend: {internal: true}}
+volumes: {pgdata: {}}
+secrets: {db_password: {file: ./secrets/db_password.txt}}</code></pre>
+<h2>Compose không phải là gì</h2>
+<p>Compose chạy trên <b>một máy</b>: không có tự phục hồi khi máy chết, không tự rải container qua nhiều máy, không rolling update đúng nghĩa. Dùng cho phát triển, CI, và dịch vụ nhỏ chấp nhận được rủi ro một máy. Khi cần nhiều máy, tự phục hồi và triển khai không gián đoạn, chuyển sang <a href="https://tracviethustcs.github.io/k8s-study-notes/" target="_blank" rel="noopener">Kubernetes</a> (công cụ <code>kompose</code> giúp chuyển file Compose thành manifest, nhưng kết quả cần được rà soát và sửa tay).</p>
+<div class="callout lab"><b>Gộp cấu hình hai môi trường</b><pre><code>mkdir -p ~/cp2 &amp;&amp; cd ~/cp2
+printf 'services:\n  app:\n    image: nginx:1.27-alpine\n    restart: unless-stopped\n' &gt; compose.yaml
+printf 'services:\n  app:\n    ports: ["127.0.0.1:8090:80"]\n    environment: {DEBUG: "1"}\n' &gt; compose.override.yaml
+printf 'services:\n  app:\n    deploy:\n      resources:\n        limits: {memory: 128M}\n' &gt; compose.prod.yaml
+docker compose config
+docker compose -f compose.yaml -f compose.prod.yaml config</code></pre>
+<p>So sánh hai kết quả: file override tự được gộp khi nào, và không được gộp khi nào?</p></div>
+</article>
+<article class="page" data-id="security" data-group="Bảo mật" data-title="Bảo mật container" hidden>
+<h1>Bảo mật container</h1>
+<p class="lead">Container cô lập yếu hơn máy ảo vì dùng chung kernel. Bảo mật nghĩa là thu hẹp những gì process trong container làm được và những gì nó chạm tới được, theo nhiều lớp, để một lớp hỏng không kéo theo cả máy chủ.</p>
+<h2>Mô hình mối đe doạ</h2>
+<p>Giả sử kẻ tấn công <b>đã chạy được code</b> trong container của bạn (qua lỗ hổng ứng dụng hay thư viện). Câu hỏi là: họ làm gì được tiếp? Nếu container chạy root, có nhiều capability, mount <code>docker.sock</code> hay chạy <code>--privileged</code>, câu trả lời thường là "chiếm cả máy chủ". Mục tiêu của các biện pháp dưới đây là làm cho câu trả lời trở thành "gần như không gì cả".</p>
+<h2>Các biện pháp theo thứ tự ưu tiên</h2>
+<div class="tw"><table><tr><th>Biện pháp</th><th>Cách làm</th><th>Tác dụng</th></tr><tr><td><b>Chạy non-root</b></td><td><code>USER 10001</code> trong Dockerfile, hoặc <code>--user 10001:10001</code></td><td>Process bị xâm nhập không có quyền root trong container</td></tr><tr><td><b>Bỏ capability</b></td><td><code>--cap-drop=ALL --cap-add=NET_BIND_SERVICE</code> (chỉ thêm cái cần)</td><td>Root truyền thống bị chia nhỏ, giữ tối thiểu</td></tr><tr><td><b>Chặn nâng quyền</b></td><td><code>--security-opt no-new-privileges:true</code></td><td>Chặn setuid biến thành root</td></tr><tr><td><b>Filesystem chỉ đọc</b></td><td><code>--read-only --tmpfs /tmp</code></td><td>Kẻ tấn công không ghi được công cụ, mã độc vào đĩa</td></tr><tr><td><b>Giới hạn tài nguyên</b></td><td><code>-m</code>, <code>--pids-limit</code>, <code>--cpus</code></td><td>Hạn chế tấn công cạn tài nguyên và fork bomb</td></tr><tr><td><b>Giữ profile seccomp mặc định</b></td><td>Đừng dùng <code>--security-opt seccomp=unconfined</code></td><td>Chặn các syscall nguy hiểm</td></tr><tr><td><b>AppArmor / SELinux</b></td><td>Giữ bật, dùng profile mặc định của Docker</td><td>Lớp kiểm soát bắt buộc, xem <a href="https://tracviethustcs.github.io/linux-network-notes/#lx-selinux" target="_blank" rel="noopener">SELinux và AppArmor</a></td></tr><tr><td><b>Không privileged</b></td><td>Tránh <code>--privileged</code></td><td>Nó trả lại gần như mọi quyền của root trên host và gỡ nhiều lớp bảo vệ</td></tr><tr><td><b>Không mount docker.sock</b></td><td>Tránh <code>-v /var/run/docker.sock:...</code></td><td>Truy cập socket gần như bằng quyền root trên host</td></tr><tr><td><b>Tránh dùng namespace của host</b></td><td>Tránh <code>--pid=host</code>, <code>--net=host</code>, <code>--ipc=host</code> trừ khi thật cần</td><td>Giữ cô lập</td></tr><tr><td><b>Image tin cậy, đã quét</b></td><td>Quét lỗ hổng, ghim digest, ký (xem bên dưới)</td><td>Giảm rủi ro từ chính image</td></tr></table></div>
+<p>Lệnh chạy "cứng" điển hình:</p>
+<pre><code>docker run -d --name app \
+  --user 10001:10001 \
+  --cap-drop=ALL --security-opt no-new-privileges:true \
+  --read-only --tmpfs /tmp \
+  -m 256m --pids-limit 200 \
+  --network appnet \
+  registry.example.com/team/app@sha256:3f1a9c...</code></pre>
+<h2>Chế độ rootless và user namespace</h2>
+<p>Mặc định daemon chạy bằng root, nên thoát khỏi container thường nghĩa là có root trên host. Hai cách giảm rủi ro:</p>
+<ul><li><b>Rootless mode</b>: chạy cả daemon và container bằng một user thường (<code>dockerd-rootless-setuptool.sh install</code>). Đổi lại có một số hạn chế (mạng, cổng dưới 1024, một số storage driver).</li><li><b>userns-remap</b>: ánh xạ root trong container thành một UID không có quyền trên host (<code>"userns-remap": "default"</code> trong <code>daemon.json</code>).</li></ul>
+<p>Podman chạy rootless theo mặc định, xem <a href="#ecosystem">Hệ sinh thái</a>.</p>
+<h2>Bí mật</h2>
+<ul><li>Không đặt bí mật vào image (<code>COPY</code>, <code>ENV</code>, <code>ARG</code>): chúng nằm vĩnh viễn trong layer và <code>docker history</code>.</li><li>Biến môi trường dễ lộ qua <code>docker inspect</code>, <code>/proc/PID/environ</code>, log và báo cáo lỗi. Ưu tiên file bí mật (<code>/run/secrets</code>), và Vault hoặc dịch vụ bí mật của cloud cho production. Xem <a href="#compose-patterns">Compose thực tế</a>.</li><li>Dùng secret mount của BuildKit cho bí mật lúc build (<a href="#build-best">Dockerfile tốt</a>).</li></ul>
+<h2>Chuỗi cung ứng image</h2>
+<p>Chạy image là chạy code của người khác. Quét lỗ hổng (Trivy, Grype), sinh SBOM, ký image bằng cosign và xác minh khi triển khai, ghim digest, và dùng registry nội bộ làm nguồn duy nhất. Chi tiết và ví dụ ở trang <a href="https://tracviethustcs.github.io/k8s-study-notes/#adv-supply-chain" target="_blank" rel="noopener">Bảo mật chuỗi cung ứng image</a>.</p>
+<h2>Bảo vệ daemon và host</h2>
+<ul><li>Daemon lắng nghe qua Unix socket. <b>Không bao giờ</b> mở TCP <code>2375</code> không xác thực ra mạng: ai kết nối được đều chiếm được máy. Nếu bắt buộc phải truy cập từ xa, dùng TLS hai chiều (cổng <code>2376</code>) hoặc SSH (<code>DOCKER_HOST=ssh://user@host</code>).</li><li>Group <code>docker</code> tương đương quyền root: cấp hạn chế.</li><li>Cập nhật Docker, runc, và kernel: nhiều lỗ hổng thoát container nằm ở các thành phần này.</li><li>Tham khảo <b>CIS Docker Benchmark</b>; công cụ <code>docker-bench-security</code> kiểm tra tự động nhiều mục.</li></ul>
+<div class="callout lab"><b>So sánh mặc định và đã cứng hoá</b><pre><code>docker run --rm alpine id                                   # uid=0(root)
+docker run --rm alpine sh -c 'grep Cap /proc/self/status'   # capability mặc định
+docker run --rm --user 10001:10001 --cap-drop=ALL --read-only alpine sh -c 'id; grep Cap /proc/self/status; touch /x'
+docker run --rm --cap-drop=ALL alpine ping -c1 127.0.0.1    # ping cần CAP_NET_RAW: thất bại
+docker run --rm --cap-drop=ALL --cap-add=NET_RAW alpine ping -c1 127.0.0.1</code></pre>
+<p>Trả lời: lệnh nào bị từ chối, và capability nào đã được trả lại để chạy được <code>ping</code>?</p></div>
+</article>
+<article class="page" data-id="daemon-logs" data-group="Vận hành" data-title="Daemon, log và dọn dẹp" hidden>
+<h1>Daemon, log và dọn dẹp</h1>
+<p class="lead">Docker daemon cần cấu hình đúng để không đầy đĩa vì log, không khởi động lại làm sập container, và không xung đột mạng với văn phòng.</p>
+<h2>daemon.json</h2>
+<p>Cấu hình daemon ở <code>/etc/docker/daemon.json</code> (Linux), cần <code>sudo systemctl restart docker</code> để áp dụng (hầu hết các mục).</p>
+<pre><code>{
+  "log-driver": "json-file",
+  "log-opts": {"max-size": "10m", "max-file": "3"},
+  "live-restore": true,
+  "registry-mirrors": ["https://mirror.example.com"],
+  "default-address-pools": [{"base": "10.200.0.0/16", "size": 24}],
+  "data-root": "/var/lib/docker"
+}</code></pre>
+<div class="tw"><table><tr><th>Khoá</th><th>Ý nghĩa</th></tr><tr><td><code>log-opts</code></td><td><b>Bắt buộc nên đặt</b> với <code>json-file</code>: nếu không, log không bị xoay vòng và sẽ làm đầy đĩa</td></tr><tr><td><code>live-restore</code></td><td>Giữ container chạy khi daemon dừng hoặc khởi động lại (hữu ích khi nâng cấp Docker); có một số giới hạn khi nâng phiên bản lớn</td></tr><tr><td><code>registry-mirrors</code></td><td>Mirror cho Docker Hub: giảm tải và tránh giới hạn pull</td></tr><tr><td><code>default-address-pools</code></td><td>Dải IP cho mạng do Docker tạo, đổi nếu trùng với mạng nội bộ</td></tr><tr><td><code>data-root</code></td><td>Nơi lưu image, container, volume: đặt trên ổ đủ lớn</td></tr><tr><td><code>storage-driver</code></td><td>Mặc định <code>overlay2</code>, hiếm khi cần đổi</td></tr></table></div>
+<pre><code>sudo systemctl status docker
+sudo journalctl -u docker -n 100 --no-pager
+docker info                                 # storage driver, cgroup driver, runtime, root dir, mirror</code></pre>
+<h2>Log</h2>
+<p>Mỗi container có log là thứ ứng dụng ghi ra <b>stdout và stderr</b> (không phải file trong container). Docker thu và lưu theo <b>logging driver</b>:</p>
+<div class="tw"><table><tr><th>Driver</th><th>Ghi chú</th></tr><tr><td><code>json-file</code> (mặc định)</td><td>Lưu file JSON trên host; <b>không xoay vòng nếu không đặt <code>max-size</code></b>; <code>docker logs</code> đọc được</td></tr><tr><td><code>local</code></td><td>Định dạng gọn hơn, xoay vòng mặc định; <code>docker logs</code> đọc được</td></tr><tr><td><code>journald</code></td><td>Vào journal của systemd; <code>docker logs</code> đọc được</td></tr><tr><td><code>syslog</code>, <code>fluentd</code>, <code>gelf</code>, <code>awslogs</code>, <code>splunk</code>...</td><td>Đẩy thẳng ra hệ thống ngoài; với một số driver <code>docker logs</code> không đọc được nữa</td></tr></table></div>
+<p>Đặt theo từng container: <code>docker run --log-opt max-size=10m --log-opt max-file=3 ...</code>. Ứng dụng nên ghi log ra stdout/stderr, và dùng agent (Fluent Bit, Promtail, OTel) hoặc log driver để gom về nơi tập trung.</p>
+<h2>Giám sát</h2>
+<pre><code>docker stats                                 # CPU, RAM, mạng, I/O theo thời gian thực
+docker events --filter event=die             # container nào vừa chết
+docker ps --format '{{.Names}}: {{.Status}}' # có "(healthy)" hoặc "(unhealthy)" nếu có healthcheck
+docker inspect -f '{{.State.Health.Status}}' web</code></pre>
+<p>Cho nhiều container: <b>cAdvisor</b> xuất metric từng container cho Prometheus; cảnh báo theo <code>container_memory_working_set_bytes</code>, số lần restart, và <code>oom_kill</code>.</p>
+<h2>Dọn dẹp</h2>
+<pre><code>docker system df                             # đang chiếm bao nhiêu
+docker container prune                       # container đã dừng
+docker image prune                           # image dangling; thêm -a để xoá mọi image không dùng
+docker builder prune                         # cache build
+docker volume prune                          # volume không có container nào dùng
+docker system prune                          # gộp nhiều thứ ở trên (không gồm volume)
+docker system prune -a --volumes             # rất mạnh: xoá cả volume không dùng</code></pre>
+<div class="callout warn"><b>prune --volumes xoá dữ liệu</b><p><code>docker volume prune</code> và <code>docker system prune --volumes</code> xoá <b>volume không có container nào đang dùng</b>: một volume của container đã dừng cũng bị tính là "không dùng" và mất dữ liệu. Kiểm tra bằng <code>docker volume ls</code> trước, và đặt lịch dọn image/cache (không phải volume) cho máy CI.</p></div>
+<div class="callout lab"><b>Chặn log làm đầy đĩa</b><pre><code>docker run -d --name noisy --log-opt max-size=1m --log-opt max-file=2 alpine sh -c 'while true; do echo "dòng log $(date)"; done'
+sleep 5; docker inspect -f '{{.LogPath}}' noisy
+sudo ls -lh "$(docker inspect -f '{{.LogPath}}' noisy)"*
+docker rm -f noisy
+docker info --format '{{.LoggingDriver}} {{.DockerRootDir}} {{.CgroupDriver}}'</code></pre>
+<p>Quan sát: kích thước file log dừng ở khoảng bao nhiêu, và có bao nhiêu file? Điều gì xảy ra nếu bỏ <code>--log-opt</code>?</p></div>
+</article>
+<article class="page" data-id="troubleshooting" data-group="Vận hành" data-title="Xử lý sự cố" hidden>
+<h1>Xử lý sự cố</h1>
+<p class="lead">Các sự cố Docker hay gặp, theo khung: triệu chứng, cách kiểm tra theo thứ tự, nguyên nhân, cách sửa. Hầu hết đều được trả lời bởi <code>docker logs</code>, <code>docker inspect</code> và hiểu biết về Linux bên dưới.</p>
+<h2>Quy trình chung</h2>
+<ol><li><code>docker ps -a</code>: container ở trạng thái nào, thoát khi nào, mã thoát?</li><li><code>docker logs --tail 100 NAME</code>: ứng dụng nói gì trước khi chết?</li><li><code>docker inspect NAME</code>: <code>State</code> (ExitCode, OOMKilled, Error), cấu hình thật (Env, Mounts, Networks).</li><li>Tái hiện bằng tay: <code>docker run --rm -it --entrypoint sh IMAGE</code>.</li><li>Nếu liên quan tới Linux bên dưới: <code>docker events</code>, <code>dmesg</code>, <code>ss</code>, <code>nsenter</code>.</li></ol>
+<h2>Kịch bản 1: Container thoát ngay sau khi chạy</h2>
+<pre><code>docker ps -a --filter name=app
+docker logs app
+docker inspect -f '{{.State.ExitCode}} {{.State.OOMKilled}} {{.State.Error}}' app
+docker run --rm -it --entrypoint sh IMAGE</code></pre>
+<div class="tw"><table><tr><th>Mã thoát và dấu hiệu</th><th>Nguyên nhân thường gặp</th></tr><tr><td>0</td><td>Tiến trình kết thúc bình thường: container chạy xong việc là dừng. Ứng dụng phải chạy ở <b>foreground</b> (đừng để chương trình tự daemonize)</td></tr><tr><td>1 hoặc mã khác</td><td>Lỗi ứng dụng: thiếu biến môi trường, cấu hình, không kết nối được dịch vụ phụ thuộc</td></tr><tr><td>126, 127</td><td>Lệnh không thực thi được hoặc không tìm thấy: sai đường dẫn, thiếu quyền <code>x</code>, sai shebang, thiếu thư viện (ví dụ file nhị phân glibc trên alpine/musl)</td></tr><tr><td>137 và <code>OOMKilled=true</code></td><td>Vượt giới hạn bộ nhớ (<a href="#resources">Tài nguyên</a>)</td></tr><tr><td><code>exec format error</code></td><td>Image sai kiến trúc CPU (arm64 và amd64)</td></tr></table></div>
+<h2>Kịch bản 2: Cổng đã publish nhưng không truy cập được</h2>
+<pre><code>docker port web
+docker exec web ss -tlnp                      # (nếu image có ss) ứng dụng nghe trên địa chỉ nào?
+sudo iptables -t nat -L DOCKER -n
+curl -v http://127.0.0.1:8080</code></pre>
+<ul><li>Ứng dụng nghe <code>127.0.0.1</code> <b>bên trong</b> container thì luồng publish không tới được: phải nghe <code>0.0.0.0</code>.</li><li>Sai thứ tự <code>host:container</code> trong <code>-p</code>.</li><li>Firewall của host hoặc security group của cloud chặn; hoặc <code>-p 127.0.0.1:...</code> nên máy khác không vào được.</li><li>Đang kiểm tra từ container khác nhưng dùng cổng host thay vì cổng container (trong cùng mạng Docker gọi thẳng <code>tên:cổng-container</code>).</li></ul>
+<h2>Kịch bản 3: Container không gọi được container khác bằng tên</h2>
+<pre><code>docker network inspect appnet
+docker exec app cat /etc/resolv.conf          # nameserver 127.0.0.11?
+docker exec app getent hosts db</code></pre>
+<p>Thường do ở <b>bridge mặc định</b> (không có DNS theo tên) hoặc <b>khác mạng</b>; sửa bằng cách tạo mạng riêng và nối cả hai (<a href="#networking">Mạng</a>). Trong Compose, hai dịch vụ chỉ thấy nhau nếu cùng một mạng.</p>
+<h2>Kịch bản 4: Permission denied trên volume hoặc bind mount</h2>
+<pre><code>docker exec app id
+docker exec app ls -ln /data
+ls -ln ./data                                  # UID/GID trên host</code></pre>
+<p>UID của ứng dụng trong container không có quyền trên thư mục. Sửa: <code>chown</code> thư mục cho đúng UID, chạy <code>--user</code> khớp, dùng volume có tên; trên RHEL/Fedora thêm <code>:z</code>/<code>:Z</code> cho SELinux (<a href="#volumes">Volume</a>). Nếu thư mục bind mount chưa tồn tại và dùng <code>-v</code>, Docker tạo nó thuộc root.</p>
+<h2>Kịch bản 5: no space left on device</h2>
+<pre><code>docker system df
+sudo du -xh --max-depth=1 /var/lib/docker | sort -h | tail
+sudo ls -lh $(docker inspect -f '{{.LogPath}}' NAME)
+df -h; df -i</code></pre>
+<p>Thủ phạm thường gặp: log <code>json-file</code> không xoay vòng, image và layer cũ, cache build, volume ẩn danh, container đã dừng. Dọn bằng <code>docker system prune</code> (xem cảnh báo về volume ở <a href="#daemon-logs">Daemon và log</a>), và đặt <code>max-size</code> cho log. Kiểm tra cả <code>df -i</code> (hết inode).</p>
+<h2>Kịch bản 6: Lỗi kéo image</h2>
+<div class="tw"><table><tr><th>Thông báo</th><th>Nguyên nhân</th></tr><tr><td><code>unauthorized</code> / <code>denied</code></td><td>Chưa <code>docker login</code>, hoặc không có quyền với repo, hoặc sai tên repo</td></tr><tr><td><code>manifest unknown</code> / <code>not found</code></td><td>Sai tag hoặc tên image</td></tr><tr><td><code>toomanyrequests</code></td><td>Chạm giới hạn pull của Docker Hub: đăng nhập, dùng mirror, hoặc registry khác</td></tr><tr><td><code>x509: certificate signed by unknown authority</code></td><td>Registry dùng CA nội bộ: cài CA vào máy (<code>/etc/docker/certs.d/REGISTRY/ca.crt</code>)</td></tr><tr><td><code>no matching manifest for linux/arm64</code></td><td>Image không có bản cho nền tảng của máy: dùng <code>--platform</code> hoặc image đa kiến trúc</td></tr><tr><td>Treo hoặc rất chậm</td><td>Mạng, DNS, hoặc proxy: kiểm tra <code>docker info</code> mục Proxy, và cấu hình proxy của daemon</td></tr></table></div>
+<h2>Kịch bản 7: Cannot connect to the Docker daemon</h2>
+<pre><code>systemctl status docker
+ls -l /var/run/docker.sock
+echo $DOCKER_HOST
+id                                              # có trong group docker?</code></pre>
+<p>Daemon chưa chạy, người dùng không có quyền với socket (thêm vào group <code>docker</code>, đăng nhập lại), hoặc <code>DOCKER_HOST</code> đang trỏ nhầm. Trên Docker Desktop, ứng dụng chưa khởi động xong.</p>
+<h2>Công cụ debug thêm</h2>
+<pre><code><span class="cm"># Dùng công cụ mạng mà không cần cài vào image</span>
+docker run --rm -it --network container:web --pid container:web nicolaka/netshoot
+sudo nsenter -t "$(docker inspect -f '{{.State.Pid}}' web)" -n -m ss -tlnp
+docker run --rm -it --entrypoint sh IMAGE
+docker diff web
+docker events --since 30m</code></pre>
+<p>Vì nhiều image tối giản (distroless) không có shell, hãy gắn một container debug dùng chung namespace mạng và PID của container cần xem, thay vì sửa image.</p>
+<div class="callout lab"><b>Chẩn đoán ba lỗi cài sẵn</b><pre><code>docker run --name bug1 -d alpine sh -c 'echo "thiếu cấu hình" &gt;&amp;2; exit 1'
+docker run --name bug2 -d -p 8082:80 python:3.12-alpine python -m http.server 80 --bind 127.0.0.1
+docker run --name bug3 -d --user 10001 -v "$PWD/lab-data":/data alpine sh -c 'echo x &gt; /data/f'
+sleep 2; docker ps -a --format '{{.Names}} {{.Status}}'
+docker logs bug1; curl -s -m 3 localhost:8082 || echo "bug2: không truy cập được"
+ls -ld lab-data; docker logs bug3
+docker rm -f bug1 bug2 bug3; sudo rm -rf lab-data</code></pre>
+<p>Với mỗi lỗi: triệu chứng là gì, nguyên nhân nào (đối chiếu các kịch bản trên), và cách sửa?</p></div>
+</article>
+<article class="page" data-id="ecosystem" data-group="Vận hành" data-title="Hệ sinh thái: Podman, containerd và Kubernetes" hidden>
+<h1>Hệ sinh thái: Podman, containerd và Kubernetes</h1>
+<p class="lead">Docker không phải là cách duy nhất để chạy container. Biết bản đồ các thành phần giúp bạn đọc tài liệu Kubernetes, chọn công cụ phù hợp và không bị bất ngờ khi môi trường khác Docker.</p>
+<h2>Các thành phần theo tầng</h2>
+<div class="tw"><table><tr><th>Tầng</th><th>Vai trò</th><th>Ví dụ</th></tr><tr><td>Công cụ cho người dùng</td><td>Build, chạy, quản lý image và container</td><td>Docker CLI, Podman, nerdctl</td></tr><tr><td>Engine quản lý container</td><td>Vòng đời container, image, lưu trữ</td><td>dockerd, containerd, CRI-O, Podman</td></tr><tr><td>Runtime mức thấp (OCI)</td><td>Tạo container thật bằng namespace, cgroup</td><td>runc, crun</td></tr><tr><td>Runtime cô lập mạnh</td><td>Cô lập hơn bằng kernel userspace hoặc microVM</td><td>gVisor, Kata Containers, Firecracker (xem <a href="https://tracviethustcs.github.io/linux-network-notes/#os-virt" target="_blank" rel="noopener">Ảo hoá</a>)</td></tr><tr><td>Công cụ build</td><td>Build image không cần daemon</td><td>BuildKit, Buildah, Kaniko</td></tr></table></div>
+<h2>Docker và Podman</h2>
+<div class="tw"><table><tr><th></th><th>Docker</th><th>Podman</th></tr><tr><td>Kiến trúc</td><td>Daemon chạy nền (thường root), CLI gọi API</td><td><b>Không daemon</b>: mỗi lệnh là một tiến trình riêng</td></tr><tr><td>Rootless</td><td>Có, là chế độ tuỳ chọn</td><td>Mặc định và là điểm mạnh</td></tr><tr><td>Khái niệm Pod</td><td>Không</td><td>Có Pod giống Kubernetes (<code>podman pod</code>, <code>podman generate kube</code>)</td></tr><tr><td>Tích hợp systemd</td><td>Qua unit tự viết</td><td>Quadlet và <code>podman generate systemd</code></td></tr><tr><td>CLI</td><td><code>docker ...</code></td><td>Gần như tương thích: <code>alias docker=podman</code> chạy được phần lớn lệnh</td></tr><tr><td>Compose</td><td><code>docker compose</code></td><td><code>podman compose</code> hoặc <code>podman-compose</code></td></tr></table></div>
+<p>Cả hai dùng chung chuẩn OCI nên image có thể trao đổi. Chọn Podman nếu cần rootless và không muốn một daemon quyền cao; chọn Docker nếu bạn cần hệ sinh thái công cụ và tài liệu rộng nhất.</p>
+<h2>Docker và Kubernetes</h2>
+<ul><li>Kubernetes không nói chuyện với Docker mà nói với một runtime qua <b>CRI</b> (Container Runtime Interface). Các runtime phổ biến là <b>containerd</b> và <b>CRI-O</b>. Từ Kubernetes 1.24, <code>dockershim</code> (lớp tích hợp trực tiếp Docker) đã bị gỡ.</li><li>Điều này <b>không</b> làm image build bằng Docker ngừng chạy: image tuân thủ OCI nên chạy tốt trên mọi runtime.</li><li>Điểm khác trong vận hành: trên node Kubernetes không còn lệnh <code>docker</code>; dùng <code>crictl</code> (hoặc <code>nerdctl</code>) để xem container trên node.</li></ul>
+<div class="tw"><table><tr><th>Docker</th><th>Tương đương trên node Kubernetes</th></tr><tr><td><code>docker ps</code></td><td><code>crictl ps</code></td></tr><tr><td><code>docker logs</code></td><td><code>crictl logs</code> hoặc <code>kubectl logs</code></td></tr><tr><td><code>docker exec</code></td><td><code>crictl exec</code> hoặc <code>kubectl exec</code></td></tr><tr><td><code>docker images</code></td><td><code>crictl images</code></td></tr></table></div>
+<p>Kiến thức về image, layer, mạng bridge, volume, giới hạn tài nguyên và bảo mật trong ghi chú này áp dụng trực tiếp ở Kubernetes: xem <a href="https://tracviethustcs.github.io/k8s-study-notes/#pods" target="_blank" rel="noopener">Pod</a>, <a href="https://tracviethustcs.github.io/k8s-study-notes/#ops-resources" target="_blank" rel="noopener">Tài nguyên</a> và <a href="https://tracviethustcs.github.io/k8s-study-notes/#ops-probes" target="_blank" rel="noopener">Probe, tắt êm</a>.</p>
+<h2>Công cụ phát triển</h2>
+<ul><li><b>Docker Desktop</b>: tiện (GUI, Kubernetes tích hợp, WSL2) nhưng có điều khoản cấp phép cho tổ chức lớn: hãy kiểm tra.</li><li>Lựa chọn thay thế trên máy cá nhân: <b>Podman Desktop</b>, <b>Rancher Desktop</b>, <b>Colima</b> (macOS/Linux), hoặc cài Engine trong WSL2/VM.</li><li>Cụm Kubernetes cục bộ: <code>kind</code>, <code>k3d</code>, <code>minikube</code>.</li></ul>
+<h2>Đi tiếp</h2>
+<p>Sau Docker: chạy trên nhiều máy với <a href="https://tracviethustcs.github.io/k8s-study-notes/" target="_blank" rel="noopener">Kubernetes</a>, mô tả hạ tầng bằng mã (<a href="https://tracviethustcs.github.io/iac-terraform-ansible-notes/" target="_blank" rel="noopener">IaC: Terraform và Ansible</a>), và tự động hoá build và phát hành (<a href="https://tracviethustcs.github.io/cicd-release-notes/" target="_blank" rel="noopener">CI/CD</a>).</p>
+</article>
+<article class="page" data-id="cli-ref" data-group="Tham chiếu" data-title="Cheat sheet lệnh và Dockerfile" hidden>
+<h1>Cheat sheet lệnh và Dockerfile</h1>
+<p class="lead">Tra nhanh theo câu hỏi "tôi muốn làm gì". Mỗi lệnh đều có giải thích ở trang tương ứng.</p>
+<h2>Image</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Tải, liệt kê</td><td><code>docker pull IMG</code>, <code>docker image ls --digests</code></td></tr><tr><td>Xem layer, cấu hình</td><td><code>docker history IMG</code>, <code>docker image inspect IMG</code></td></tr><tr><td>Build</td><td><code>docker build -t NAME:TAG .</code>, thêm <code>-f FILE</code>, <code>--target STAGE</code>, <code>--build-arg K=V</code>, <code>--progress=plain</code></td></tr><tr><td>Build đa nền tảng</td><td><code>docker buildx build --platform linux/amd64,linux/arm64 -t REG/NAME:TAG --push .</code></td></tr><tr><td>Gắn tag, đẩy</td><td><code>docker tag SRC DST</code>, <code>docker push DST</code></td></tr><tr><td>Xuất, nhập</td><td><code>docker save -o f.tar IMG</code>, <code>docker load -i f.tar</code></td></tr><tr><td>Xoá</td><td><code>docker rmi IMG</code>, <code>docker image prune</code>, <code>docker image prune -a</code></td></tr></table></div>
+<h2>Container</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Chạy</td><td><code>docker run -d --name N -p H:C -e K=V -v VOL:/path --restart unless-stopped IMG</code></td></tr><tr><td>Chạy một lần</td><td><code>docker run --rm -it IMG sh</code></td></tr><tr><td>Danh sách</td><td><code>docker ps</code>, <code>docker ps -a</code>, <code>docker ps -a --filter status=exited</code></td></tr><tr><td>Dừng, chạy lại, xoá</td><td><code>docker stop N</code>, <code>docker start N</code>, <code>docker restart N</code>, <code>docker rm -f N</code></td></tr><tr><td>Vào trong</td><td><code>docker exec -it N sh</code></td></tr><tr><td>Log</td><td><code>docker logs -f --tail 100 --since 10m N</code></td></tr><tr><td>Chi tiết</td><td><code>docker inspect -f '{{.State.ExitCode}} {{.State.OOMKilled}}' N</code></td></tr><tr><td>Process, tài nguyên</td><td><code>docker top N</code>, <code>docker stats --no-stream</code></td></tr><tr><td>Chép file</td><td><code>docker cp N:/path ./</code>, <code>docker cp ./f N:/path</code></td></tr><tr><td>Thay đổi trong lớp ghi</td><td><code>docker diff N</code></td></tr><tr><td>Sự kiện</td><td><code>docker events --since 30m</code></td></tr></table></div>
+<h2>Mạng, volume, dọn dẹp</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Mạng</td><td><code>docker network create NET</code>, <code>docker network ls</code>, <code>docker network inspect NET</code>, <code>docker network connect NET N</code></td></tr><tr><td>Cổng đã publish</td><td><code>docker port N</code></td></tr><tr><td>Volume</td><td><code>docker volume create V</code>, <code>docker volume ls</code>, <code>docker volume inspect V</code>, <code>docker volume rm V</code></td></tr><tr><td>Dung lượng</td><td><code>docker system df -v</code></td></tr><tr><td>Dọn</td><td><code>docker system prune</code>, <code>docker builder prune</code>, <code>docker volume prune</code></td></tr></table></div>
+<h2>Compose</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Chạy, build lại</td><td><code>docker compose up -d</code>, <code>docker compose up -d --build</code></td></tr><tr><td>Trạng thái, log</td><td><code>docker compose ps</code>, <code>docker compose logs -f SVC</code></td></tr><tr><td>Vào, chạy một lần</td><td><code>docker compose exec SVC sh</code>, <code>docker compose run --rm SVC CMD</code></td></tr><tr><td>Dừng, xoá</td><td><code>docker compose stop</code>, <code>docker compose down</code>, <code>docker compose down -v</code></td></tr><tr><td>Kiểm tra cấu hình</td><td><code>docker compose config</code></td></tr><tr><td>Nhiều file</td><td><code>docker compose -f a.yaml -f b.yaml up -d</code></td></tr></table></div>
+<h2>Dockerfile mẫu cho dịch vụ web</h2>
+<pre><code><span class="cm"># syntax=docker/dockerfile:1</span>
+FROM python:3.12-slim AS base
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /app
+
+FROM base AS deps
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
+
+FROM base AS runtime
+COPY --from=deps /usr/local /usr/local
+COPY . .
+RUN useradd -r -u 10001 app &amp;&amp; chown -R app /app
+USER 10001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+CMD ["python", "-m", "app"]</code></pre>
+<h2>Chuỗi định dạng hay dùng với <code>--format</code></h2>
+<div class="tw"><table><tr><th>Muốn lấy</th><th>Chuỗi</th></tr><tr><td>IP của container</td><td><code>{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}</code></td></tr><tr><td>PID trên host</td><td><code>{{.State.Pid}}</code></td></tr><tr><td>Trạng thái và mã thoát</td><td><code>{{.State.Status}} {{.State.ExitCode}}</code></td></tr><tr><td>Đường dẫn file log</td><td><code>{{.LogPath}}</code></td></tr><tr><td>Danh sách mount</td><td><code>{{range .Mounts}}{{.Source}} -&gt; {{.Destination}}{{"\n"}}{{end}}</code></td></tr></table></div>
+</article>
+<article class="page" data-id="quiz-1" data-group="Luyện tập" data-title="Luyện tập 1: Image, Dockerfile và registry" hidden>
+<h1>Luyện tập 1: Image, Dockerfile và registry</h1>
+<p class="lead">6 câu về layer, cache, multi-stage, tag và digest. Chọn đáp án rồi bấm "Kiểm tra" để xem giải thích. Kết quả được lưu trong trình duyệt.</p>
+<h2>Câu hỏi</h2>
+<div class="quiz"></div>
+<script type="application/json" class="qj">[{"q": "Bạn thêm `RUN rm -rf /var/cache/*` ở một lệnh riêng sau lệnh `RUN apt-get install ...` nhưng kích thước image không giảm. Vì sao?", "o": ["Cache build giữ lại các file đã xoá", "Lệnh `rm` cần quyền root mà build không có", "Mỗi `RUN` tạo một layer chỉ đọc; xoá file ở layer sau không làm layer trước nhỏ đi, nên dữ liệu vẫn nằm trong image", "Docker bỏ qua lệnh `rm` trong Dockerfile"], "a": [2], "e": "Layer là bản diff chỉ ghi thêm. Muốn thực sự loại bỏ, phải dọn trong **cùng một `RUN`** với lệnh tạo ra rác (`apt-get install ... && rm -rf /var/lib/apt/lists/*`), hoặc dùng multi-stage để chỉ chép kết quả cần thiết sang giai đoạn cuối."}, {"q": "Mỗi lần sửa một dòng mã nguồn, bước `pip install` lại chạy từ đầu và build rất chậm. Dockerfile có `COPY . .` rồi mới `RUN pip install -r requirements.txt`. Cách sửa hợp lý nhất?", "o": ["Thêm `--no-cache` vào `docker build`", "Dùng `ADD` thay cho `COPY`", "Đổi image nền sang alpine", "Chép `requirements.txt` và chạy `pip install` trước, sau đó mới `COPY . .`, để layer cài thư viện chỉ bị vô hiệu khi `requirements.txt` đổi"], "a": [3], "e": "Một layer bị vô hiệu thì mọi layer sau nó phải build lại. `COPY . .` đặt trước làm layer cài thư viện thay đổi mỗi khi bất kỳ file nào đổi. Đặt thứ ít đổi (manifest phụ thuộc) lên trên, mã nguồn hay đổi xuống dưới."}, {"q": "Một image Go build bằng `FROM golang:1.23` có kích thước hơn 800 MB. Cách nào giảm mạnh kích thước và bề mặt tấn công?", "o": ["Thêm `RUN apt-get clean` ở cuối", "Dùng multi-stage: build ở giai đoạn có compiler, rồi chép file nhị phân sang giai đoạn runtime nhỏ (distroless hoặc `scratch`)", "Đổi `CMD` sang dạng shell", "Nén image bằng `docker save | gzip`"], "a": [1], "e": "Compiler và toàn bộ công cụ build không cần lúc chạy. Multi-stage chỉ giữ lại sản phẩm cuối. Nén khi `save` chỉ ảnh hưởng tệp xuất ra, không đổi image thật."}, {"q": "Chọn TẤT CẢ phát biểu đúng về tag và digest.", "o": ["`latest` luôn là phiên bản mới nhất được phát hành", "Digest `sha256:...` là mã băm của manifest và bất biến, nên đảm bảo chạy đúng image đã thử", "Triển khai bằng digest giúp tránh việc image bị đổi ngầm", "Một tag như `latest` hoặc `1.4` có thể được đổi để trỏ sang image khác"], "a": [1, 2, 3], "e": "`latest` chỉ là một tag tên như vậy, không bảo đảm gì về độ mới, và tag nào cũng có thể bị đổi. Digest được tính từ nội dung nên không thể đổi mà không đổi mã băm. Quy tắc: build một lần, gắn tag theo git SHA/semver, triển khai bằng digest."}, {"q": "Bạn truyền token tải thư viện riêng bằng `ARG NPM_TOKEN` rồi `RUN npm ci`. Vì sao đây là cách không an toàn, và cách đúng là gì?", "o": ["Không an toàn vì `ARG` bị ghi vào registry dưới dạng văn bản rõ ràng trong tên tag", "Giá trị `ARG` lộ trong `docker history` và metadata của image; dùng secret mount của BuildKit (`RUN --mount=type=secret,id=...`) để không lưu vào layer", "An toàn, vì `ARG` chỉ tồn tại lúc build", "An toàn nếu xoá biến ở cuối Dockerfile bằng `ENV NPM_TOKEN=`"], "a": [1], "e": "`ARG` không phải nơi chứa bí mật: giá trị còn hiện trong lịch sử build. Xoá ở lệnh sau không xoá khỏi layer cũ. `RUN --mount=type=secret` cung cấp bí mật dưới dạng file tạm chỉ trong lúc lệnh chạy và không đưa vào image."}, {"q": "`docker stop` một container chạy `CMD python app.py` (shell form) luôn mất đúng 10 giây rồi mới dừng. Nguyên nhân hợp lý nhất?", "o": ["Docker luôn chờ 10 giây dù ứng dụng thoát nhanh", "Ứng dụng đang ở trạng thái zombie", "Cổng của container chưa được đóng", "PID 1 là `sh`, không chuyển tiếp `SIGTERM` tới ứng dụng, nên sau 10 giây Docker gửi `SIGKILL`; dùng exec form `CMD [\"python\",\"app.py\"]` hoặc `--init`"], "a": [3], "e": "Shell form chạy `/bin/sh -c \"...\"`, và PID 1 không có hành vi signal mặc định nên `SIGTERM` bị bỏ qua. Exec form làm ứng dụng trở thành PID 1 nhận signal trực tiếp (ứng dụng cần có handler); `--init` dùng tini để chuyển tiếp signal."}]</script>
+</article>
+<article class="page" data-id="quiz-2" data-group="Luyện tập" data-title="Luyện tập 2: Runtime, mạng, bảo mật và sự cố" hidden>
+<h1>Luyện tập 2: Runtime, mạng, bảo mật và sự cố</h1>
+<p class="lead">6 câu tình huống về chạy container, mạng, volume, bảo mật và xử lý sự cố.</p>
+<h2>Câu hỏi</h2>
+<div class="quiz"></div>
+<script type="application/json" class="qj">[{"q": "Container `api` thoát với mã 137 sau vài giờ chạy, `docker inspect` cho `OOMKilled=true`, máy chủ còn nhiều RAM trống. Giải thích đúng nhất?", "o": ["Docker daemon bị crash", "Container vượt giới hạn bộ nhớ của cgroup (`-m`), nên kernel OOM kill process trong cgroup đó bằng SIGKILL (128 + 9)", "Ứng dụng tự gọi `exit(137)`", "Máy chủ hết RAM nên kernel giết container"], "a": [1], "e": "137 = 128 + 9 (SIGKILL). `OOMKilled=true` cho biết là OOM do giới hạn của cgroup, không phải máy hết RAM. Hướng xử lý: tìm rò rỉ hoặc tăng giới hạn hợp lý; với JVM đặt heap thấp hơn giới hạn container."}, {"q": "Hai container chạy bằng `docker run` thường (không chỉ định mạng) không gọi nhau được bằng tên, nhưng gọi bằng IP thì được. Cách khắc phục đúng?", "o": ["Tắt firewall của host", "Tạo một mạng bridge do người dùng định nghĩa (`docker network create`) và nối cả hai vào, vì bridge mặc định không có phân giải tên", "Dùng `EXPOSE` trong Dockerfile", "Thêm `-p` cho cả hai container"], "a": [1], "e": "Chỉ mạng bridge do người dùng tạo mới có DNS nhúng (127.0.0.11) phân giải tên container. Bridge mặc định chỉ dùng IP. `-p` và `EXPOSE` không liên quan tới việc container gọi container."}, {"q": "Bạn chạy `docker run -p 5432:5432 postgres` trên máy đã bật `ufw` chặn mọi kết nối vào, nhưng từ máy khác vẫn kết nối được database. Vì sao, và cách đúng?", "o": ["ufw bị lỗi và cần cài lại", "`-p` chỉ mở cổng trong mạng nội bộ của Docker", "Postgres tự mở cổng bất kể cấu hình", "Docker tự chèn luật iptables riêng cho cổng được publish nên bỏ qua ufw; chỉ bind `127.0.0.1:5432:5432`, hoặc không publish và dùng mạng Docker, hoặc đặt luật ở chain `DOCKER-USER`"], "a": [3], "e": "Luật DNAT của Docker được xử lý trước các chain mà ufw quản lý. `-p HOST:CONTAINER` không chỉ định địa chỉ nghĩa là mở ra mọi giao diện. Với dịch vụ chỉ dùng nội bộ, không publish hoặc bind vào loopback."}, {"q": "Chọn TẤT CẢ biện pháp làm giảm tác hại nếu một container bị xâm nhập.", "o": ["Mount `/var/run/docker.sock` để container tự quản lý container khác", "Dùng filesystem chỉ đọc (`--read-only`) kèm `--tmpfs` cho thư mục cần ghi", "Đặt `no-new-privileges` và giữ profile seccomp mặc định", "Chạy bằng user non-root và bỏ capability không cần (`--cap-drop=ALL`)"], "a": [1, 2, 3], "e": "Mount `docker.sock` cho container quyền điều khiển daemon, gần như bằng root trên host, nên làm tăng rủi ro thay vì giảm. Ba biện pháp còn lại thu hẹp những gì process bị xâm nhập làm được."}, {"q": "Sau một thời gian, ổ đĩa của máy chạy Docker đầy 100%. `docker system df` cho thấy image và volume nhỏ, nhưng `/var/lib/docker/containers` rất lớn. Nguyên nhân khả dĩ nhất và cách xử lý?", "o": ["Cache build quá lớn; chạy `docker builder prune`", "File log `json-file` của các container không được xoay vòng; đặt `log-opts` `max-size` và `max-file` trong `daemon.json` (hoặc cho từng container) rồi tạo lại container", "Image dangling; chạy `docker image prune`", "Volume ẩn danh; chạy `docker volume prune`"], "a": [1], "e": "Log mặc định của `json-file` nằm trong thư mục của từng container và không bị giới hạn nếu không đặt `max-size`. Cách khắc phục là cấu hình xoay vòng log (hoặc đổi driver) và tạo lại container, vì cấu hình log áp dụng lúc tạo container."}, {"q": "Một container đang chạy từ image distroless không có shell, bạn cần kiểm tra kết nối mạng từ bên trong nó. Cách phù hợp nhất?", "o": ["Chạy một container debug dùng chung namespace mạng và PID của nó, ví dụ `docker run --rm -it --network container:NAME --pid container:NAME nicolaka/netshoot`", "Sửa Dockerfile thêm shell rồi triển khai lại", "Dừng container rồi chạy lại bằng `--privileged`", "Dùng `docker exec -it NAME sh`"], "a": [0], "e": "Image không có shell nên `docker exec ... sh` thất bại. Container debug gắn vào namespace của container mục tiêu, nên `ss`, `curl`, `tcpdump` thấy đúng mạng của nó mà không sửa image hay tăng quyền."}]</script>
+</article>
+
+    <footer>
+      <p style="margin:0 0 8px"><a href="https://tracviethustcs.github.io/">← Về trang chủ Trác Việt</a></p>
+      <p style="margin:0 0 8px"><b style="color:var(--ink)">Soạn bởi Trác Việt</b> (<a href="https://github.com/TracVietHustCS" target="_blank" rel="noopener">@TracVietHustCS</a>)</p>
+      Ghi chú tự học, tự soạn, không phải tài liệu chính thức của Docker, Inc. hay Open Container Initiative. Docker là nhãn hiệu của Docker, Inc. Lệnh, tuỳ chọn và giá trị mặc định thay đổi theo phiên bản: hãy đối chiếu tài liệu hiện hành (docs.docker.com) và thử trong môi trường lab. Đừng chạy lệnh trên server production nếu chưa hiểu nó làm gì.
+    </footer>
+  </main>
+
+  <nav id="toc" aria-label="Trong trang này"></nav>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const pages=$$('.page');
+const index=pages.map(p=>p.textContent.toLowerCase());
+let read={};
+try{read=JSON.parse(localStorage.getItem('dkr-read')||'{}')}catch(e){}
+const saveRead=()=>{try{localStorage.setItem('dkr-read',JSON.stringify(read))}catch(e){}};
+
+/* sidebar */
+const groups=[];
+pages.forEach(p=>{
+  let g=groups.find(x=>x.name===p.dataset.group);
+  if(!g){g={name:p.dataset.group,items:[]};groups.push(g)}
+  g.items.push(p);
+});
+let current='overview';
+function buildNav(){
+  $('#side-links').innerHTML=groups.map(g=>`<div class="grp"><h3>${g.name}</h3>${g.items.map(p=>
+    `<a href="#${p.dataset.id}" data-id="${p.dataset.id}" class="${read[p.dataset.id]?'read':''}">${p.dataset.title}</a>`).join('')}</div>`).join('');
+  const n=Object.values(read).filter(Boolean).length;
+  $('#progtxt').textContent=`Đã đọc ${n}/${pages.length} trang`;
+  $('#progbar').style.width=(n/pages.length*100)+'%';
+  $$('#side-links a').forEach(a=>a.classList.toggle('on',a.dataset.id===current));
+  applyFilter();
+}
+
+/* pages */
+function show(id){
+  const page=pages.find(p=>p.dataset.id===id)||pages[0];
+  current=page.dataset.id;
+  pages.forEach(p=>p.hidden=(p!==page));
+  if(!$('.crumb',page)){
+    const c=document.createElement('div');c.className='crumb';
+    c.textContent=page.dataset.group+'  ›  '+page.dataset.title;
+    page.prepend(c);
+  }
+  $$('pre',page).forEach(pre=>{
+    if($('.copy',pre)||pre.classList.contains('ascii'))return;
+    const b=document.createElement('button');b.className='copy';b.type='button';b.textContent='Sao chép';
+    b.addEventListener('click',()=>copyCode(pre,b));
+    pre.appendChild(b);
+  });
+  $$('.mark,.pn',page).forEach(e=>e.remove());
+  const m=document.createElement('div');m.className='mark';
+  m.innerHTML=`<button type="button" aria-pressed="${!!read[current]}">${read[current]?'Đã đọc ✓':'Đánh dấu đã đọc'}</button>`;
+  m.firstChild.addEventListener('click',e=>{
+    read[current]=!read[current];saveRead();
+    e.currentTarget.setAttribute('aria-pressed',!!read[current]);
+    e.currentTarget.textContent=read[current]?'Đã đọc ✓':'Đánh dấu đã đọc';
+    buildNav();
+  });
+  page.appendChild(m);
+  const i=pages.indexOf(page),prev=pages[i-1],next=pages[i+1];
+  const pn=document.createElement('div');pn.className='pn';
+  pn.innerHTML=(prev?`<a href="#${prev.dataset.id}"><small>Trước</small>${prev.dataset.title}</a>`:'<span></span>')+
+               (next?`<a href="#${next.dataset.id}"><small>Tiếp theo</small>${next.dataset.title}</a>`:'');
+  page.appendChild(pn);
+
+  document.title=page.dataset.title+' · Docker notes';
+  buildNav();initQuiz(page);buildToc(page);
+  window.scrollTo(0,0);
+  closeSide();
+}
+function copyCode(pre,btn){
+  const text=$('code',pre).innerText;
+  const done=()=>{btn.textContent='Đã chép';setTimeout(()=>btn.textContent='Sao chép',1400)};
+  const fallback=()=>{
+    try{const r=document.createRange();r.selectNodeContents($('code',pre));
+      const s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');s.removeAllRanges();done();}
+    catch(e){btn.textContent='Không chép được'}
+  };
+  try{navigator.clipboard.writeText(text).then(done,fallback)}catch(e){fallback()}
+}
+
+/* on this page */
+let tocItems=[];
+function buildToc(page){
+  const hs=$$('h2,h3',page);
+  tocItems=hs.map((h,i)=>{h.id=`${current}-h${i}`;return {h,a:null}});
+  $('#toc').innerHTML='<h4>Trong trang này</h4>'+hs.map((h,i)=>`<a href="#" class="${h.tagName==='H3'?'l3':''}" data-i="${i}">${h.textContent}</a>`).join('');
+  $$('#toc a').forEach(a=>{
+    tocItems[+a.dataset.i].a=a;
+    a.addEventListener('click',e=>{e.preventDefault();tocItems[+a.dataset.i].h.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})});
+  });
+  spy();
+}
+function spy(){
+  if(!tocItems.length)return;
+  let cur=0;
+  tocItems.forEach((t,i)=>{if(t.h.getBoundingClientRect().top<110)cur=i});
+  tocItems.forEach((t,i)=>t.a&&t.a.classList.toggle('on',i===cur));
+}
+addEventListener('scroll',spy,{passive:true});
+
+/* search */
+function applyFilter(){
+  const q=$('#q').value.trim().toLowerCase();
+  let any=false;
+  $$('.grp').forEach(g=>{
+    let vis=false;
+    $$('a',g).forEach(a=>{
+      const i=pages.findIndex(p=>p.dataset.id===a.dataset.id);
+      const hit=!q||index[i].includes(q)||a.textContent.toLowerCase().includes(q);
+      a.style.display=hit?'':'none'; if(hit)vis=true;
+    });
+    g.style.display=vis?'':'none'; if(vis)any=true;
+  });
+  $('#none').style.display=any?'none':'block';
+}
+$('#q').addEventListener('input',()=>{ if(innerWidth<=820)openSide(); applyFilter(); });
+$('#q').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const a=$$('#side-links a').find(x=>x.style.display!=='none');if(a){location.hash=a.dataset.id;}}
+});
+addEventListener('keydown',e=>{
+  if(e.key==='/'&&!/input|textarea/i.test(document.activeElement.tagName)){e.preventDefault();$('#q').focus()}
+});
+
+/* mobile sidebar */
+function openSide(){$('#side').classList.add('open');$('#scrim').classList.add('open')}
+function closeSide(){$('#side').classList.remove('open');$('#scrim').classList.remove('open')}
+$('#burger').addEventListener('click',()=>$('#side').classList.contains('open')?closeSide():openSide());
+$('#scrim').addEventListener('click',closeSide);
+
+/* theme */
+const root=document.documentElement;
+try{const t=localStorage.getItem('dkr-theme');if(t)root.dataset.theme=t}catch(e){}
+$('#theme').addEventListener('click',()=>{
+  const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+  root.dataset.theme=dark?'light':'dark';
+  try{localStorage.setItem('dkr-theme',root.dataset.theme)}catch(e){}
+});
+
+
+/* ===== quiz engine ===== */
+const qesc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/`([^`]+)`/g,'<code>$1</code>');
+function initQuiz(page){
+  const box=$('.quiz',page); if(!box||box.dataset.ready) return;
+  box.dataset.ready='1';
+  const data=JSON.parse($('script.qj',page).textContent);
+  const key='dkr-quiz-'+page.dataset.id;
+  let st={}; try{st=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){}
+  const sum=document.createElement('div'); sum.className='qsum';
+  box.appendChild(sum);
+  const list=document.createElement('div'); box.appendChild(list);
+  const upd=()=>{
+    const done=Object.keys(st).length, ok=Object.values(st).filter(Boolean).length;
+    sum.innerHTML=`<span>Đã làm <b>${done}/${data.length}</b></span><span>Đúng <b>${ok}</b></span><span>${done?Math.round(ok/done*100)+'%':''}</span><button type="button">Làm lại</button>`;
+    $('button',sum).onclick=()=>{st={};try{localStorage.removeItem(key)}catch(e){};box.dataset.ready='';box.innerHTML='';initQuiz(page)};
+  };
+  data.forEach((d,i)=>{
+    const multi=d.a.length>1;
+    const q=document.createElement('div'); q.className='qs';
+    q.innerHTML=`<p class="qn">Câu ${i+1}</p><p class="qt">${qesc(d.q)}</p><ul class="qo">`+
+      d.o.map((t,j)=>`<li><label><input type="${multi?'checkbox':'radio'}" name="q${i}" value="${j}"><span>${qesc(t)}</span></label></li>`).join('')+
+      `</ul>${multi?`<p class="qh">Chọn ${d.a.length} đáp án</p>`:''}<button class="qb" type="button">Kiểm tra</button><div class="qe" hidden></div>`;
+    list.appendChild(q);
+    const btn=$('.qb',q), ex=$('.qe',q);
+    const finish=(picked,ok)=>{
+      q.classList.add(ok?'right':'wrong');
+      $$('li',q).forEach((li,j)=>{
+        const inp=$('input',li); inp.disabled=true;
+        if(d.a.includes(j)) li.classList.add(picked.includes(j)?'ok':'miss');
+        else if(picked.includes(j)) li.classList.add('bad');
+      });
+      ex.hidden=false; btn.disabled=true;
+      ex.innerHTML=`<b class="v">${ok?'Đúng.':'Chưa đúng.'} Đáp án: ${d.a.map(j=>String.fromCharCode(65+j)).join(', ')}</b>${qesc(d.e)}`;
+    };
+    if(i in st){ // restore state
+      $$('input',q).forEach((inp,j)=>{ if(d.a.includes(j)&&st[i]) inp.checked=true; });
+      finish(st[i]?d.a:[],st[i]);
+    }
+    btn.onclick=()=>{
+      const picked=$$('input:checked',q).map(x=>+x.value);
+      if(!picked.length){ex.hidden=false;ex.textContent='Hãy chọn đáp án trước.';return}
+      const ok=picked.length===d.a.length&&d.a.every(x=>picked.includes(x));
+      st[i]=ok; try{localStorage.setItem(key,JSON.stringify(st))}catch(e){}
+      finish(picked,ok); upd();
+    };
+  });
+  upd();
+}
+
+/* routing: only a plain #page-id is used in the hash */
+addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1));
+</script>
+</body>
+</html>
